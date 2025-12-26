@@ -84,7 +84,13 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 	function checkUnboundRelationPredicates(root: any) {
 		const allRelPredicates = getAllRelationPredicates(root)
 		const tupleVariables = getAllTupleVariables(root)
-		const hasUnboundVariable = allRelPredicates.length > tupleVariables.length
+
+		// Create a Set with all variables used in relation predicates
+		const declaredVariables = new Set(allRelPredicates.map((p: any) => p.variable))
+
+		// If there is at least one unbound variable, throw an error
+		const hasUnboundVariable = tupleVariables.some(v => !declaredVariables.has(v))
+
 
 		if (hasUnboundVariable) {
 			throw new ExecutionError(i18n.t('db.messages.translate.error-trc-unbound-variable'));
@@ -100,7 +106,7 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 					vars.push(...root.variables)
 					return rec(root.formula)
 				}
-				case 'RelationPredicate': return
+				case 'RelationPredicate': return 
 				case 'Negation': return rec(root.formula)
 				case 'QuantifiedExpression': {
 					vars.push(root.variable)
@@ -114,7 +120,7 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 				default: return null
 			}
 		}
-
+		
 		rec(root)
 
 		return vars
@@ -140,7 +146,7 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 				default: return null
 			}
 		}
-
+		
 		rec(root)
 
 		return relPreds
@@ -155,7 +161,7 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 		switch (root.type) {
 			case 'TRC_Expr': return getRelationPredicate(root.formula, tupleVar, ++scopeChanges)
 			case 'RelationPredicate': {
-				if (root.variable === tupleVar) {
+				if (!tupleVar || root.variable === tupleVar) {
 					return root
 				}
 				return null
@@ -274,7 +280,9 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 		switch (nRaw.type) {
 			case 'TRC_Expr': {
 				const projections = nRaw.projections.flatMap((e: any) => {
-					if (e.type === 'columnName') {
+					if (e.type === 'columnName' || 
+						(e.type === 'column' && e.name === '*')
+					) {
 						if (e.relAlias === null) {
 							return getAllColumns(nRaw, e.name)
 						}
@@ -471,9 +479,9 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 				if (nRaw.formula.type === 'RelationPredicate') {
 					throw new ExecutionError(
 						i18n.t('db.messages.translate.error-trc-unsafe-formula',
-						{
+						{ 
 							relation: nRaw.formula.relation,
-							variable: nRaw.formula.variable
+							variable: nRaw.formula.variable 
 						}),
 						nRaw.codeInfo
 					);
@@ -1019,7 +1027,6 @@ export function relalgFromRelalgAstNode(astNode: relalgAst.relalgOperation, rela
 							n.codeInfo
 						);
 					}
-
 					const start = Date.now();
 
 					let node: RANode;
@@ -1165,15 +1172,15 @@ export function relalgFromRelalgAstNode(astNode: relalgAst.relalgOperation, rela
 									}
 								}
 								else // normal columns
-									projections.push(new Column(el.name, el.relAlias));
+									projections.push(new Column(el.name, el.relAlias));	
 							}
 							// project all columns
 							else if (child.getMetaData('fromVariable') &&
 											 child.getMetaData('fromVariable') === el.relAlias) {
-								projections.push(new Column(el.name, null));
+								projections.push(new Column(el.name, null));	
 							}
 							else {
-								projections.push(new Column(el.name, el.relAlias));
+								projections.push(new Column(el.name, el.relAlias));	
 							}
 						}
 						else if (el.type === 'columnName') {
@@ -1569,12 +1576,12 @@ export function relalgFromRelalgAstNode(astNode: relalgAst.relalgOperation, rela
 					}
 					if (child2.getMetaData('fromVariable')) {
 						node.setMetaData(
-								'fromVariable',
-								(
-									node.getMetaData('fromVariable') ?
-										node.getMetaData('fromVariable') + ' ' : ''
-								) +
-								child2.getMetaData('fromVariable'));
+							'fromVariable',
+							(
+								node.getMetaData('fromVariable') ?
+									node.getMetaData('fromVariable') + ' ' : ''
+							) +
+							child2.getMetaData('fromVariable'));
 					}
 					setAdditionalData(n, node);
 					node._execTime = Date.now() - start;

@@ -470,6 +470,20 @@ export class ValueExprGeneric extends ValueExpr {
 					return 'unknown';
 				}
 				return (a !== b);
+			case 'between':
+			case 'notBetween': {
+				const val = this._args[0].evaluate(tupleA, tupleB, row, statementSession);
+				const lower = this._args[1].evaluate(tupleA, tupleB, row, statementSession);
+				const upper = this._args[2].evaluate(tupleA, tupleB, row, statementSession);
+				if (val === null || lower === null || upper === null) {
+					return 'unknown';
+				}
+				typeA = this._args[0].getDataType();
+				const isBetween =
+					ValueExprGeneric._condition_compare(val, lower, typeA, '>=') === true &&
+					ValueExprGeneric._condition_compare(val, upper, typeA, '<=') === true;
+				return this._func === 'between' ? isBetween : !isBetween;
+			}
 			case '=':
 			case '>=':
 			case '<=':
@@ -615,6 +629,24 @@ export class ValueExprGeneric extends ValueExpr {
 					}));
 				}
 				return this._checkArgsDataType(schemaA, schemaB, ['boolean', 'boolean']);
+			case 'between':
+			case 'notBetween':
+				// check that all three args have the same datatype (number, date, or string)
+				this._args[0].check(schemaA, schemaB);
+				this._args[1].check(schemaA, schemaB);
+				this._args[2].check(schemaA, schemaB);
+				typeA = this._args[0].getDataType();
+				typeB = this._args[1].getDataType();
+				const typeC = this._args[2].getDataType();
+				if (typeA === typeB && typeA === typeC) {
+					return true;
+				}
+				this.throwExecutionError(
+					i18n.t('db.messages.exec.error-could-not-compare-different-types', {
+						typeA: `${typeA}, ${typeB}, ${typeC}`,
+						typeB: '',
+					})
+				);
 			case 'like':
 			case 'ilike':
 				// http://www.postgresql.org/docs/9.4/static/functions-matching.html#FUNCTIONS-LIKE

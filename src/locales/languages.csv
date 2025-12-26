@@ -53,7 +53,7 @@ keyboard shortcuts:
 ","Digite sua consulta aqui
 
 Atalhos do teclado:
-	executar declaração:    [CTRL]+[RETURN]
+	executar declaraçãot:    [CTRL]+[RETURN]
 	executar seleção:    [CTRL]+[SHIFT]+[RETURN]
 	autocompletar:         [CTRL]+[SPACE]
 ","Abfrage ...
@@ -102,7 +102,7 @@ calc.menu.load-gist-headline,Load dataset stored in a gist,Carregar Dataset arma
 calc.menu.load-gist-button,load,Carregar,laden,cargar,불러오기,carica
 calc.menu.load-gist-insert-placeholder,gist ID,gist ID,gist ID,ID de gist,gist 아이디,ID gist
 calc.menu.create-own-dataset-headline,Create your own Dataset,Crie seu próprio Dataset,Eigenen Datensatz erstellen,Crear tu propio Dataset,데이터셋 생성하기,Crea il tuo set di dati
-calc.menu.create-own-dataset-text,You can create your own dataset and share it with others. Learn more about it in the  ,Você pode criar seu próprio conjunto de dados e compartilhá-lo com outras pessoas. Saiba mais sobre isso no ,"Sie können Ihren eigenen Datensatz erstellen und ihn mit anderen teilen. Lernen Sie mehr darüber  im  <a href=""help.htm#tutorial-maintainer"">Maintainer Tutorial</a>","Puedes crear tu propio dataset y compartirlo con otras personas.
+calc.menu.create-own-dataset-text,You can create your own dataset and share it with others. Learn more about it in the  ,Você pode criar seu próprio conjunto de dados e compartilhá-lo com outras pessoas. Saiba mais sobre isso no ,"Sie können Ihren eigenen Datensatz erstellen und ihn mit anderen teilen. Lernen Sie mehr darüber  im  <a href=""help.htm#tutorial-maintainer"">Maintainer Tutorial</a>","Puedes crear tu propio dataset y compartirlo con otras personas. 
 Aprende más acerca de ésto en ",You can create your own dataset and share it with others. Learn more about it in the ,Puoi creare il tuo set di dati e condividerlo con altri. Scopri di più nel
 calc.menu.create-own-dataset-text-link,Maintainer Tutorial,Tutorial de manutenção,Maintainer Tutorial (en),Tutorial de mantenimiento (en),Maintainer Tutorial,Tutorial del responsabile
 calc.menu.create-own-dataset-button-new,create new Dataset,Criar novo Dataset,neuen Datensatz erstellen,crear nuevo Dataset,새로운 데이터셋 생성,crea un nuovo set di dati
@@ -136,7 +136,7 @@ calc.editors.group.button-use_plural,use first Group in editor,Use o primeiro Gr
 calc.editors.group.sql-import-group-name-placeholder,Name of the group (imported from SQL),Nome do grupo (importado de SQL),Name des Datensatzes (importiert),Nombre del grupo (importado de SQL),그룹 이름(SQL로부터 불러옴),Nome del gruppo (importato da SQL)
 calc.editors.group.new-group-example-group,"-- this is an example
 
-group: nameOfTheNewGroup
+group: nameOfTheNewGroup 
 
 
 A = {
@@ -144,7 +144,7 @@ A = {
 	example,  42
 }","-- este é um exemplo
 
-group: nomeDoNovoGrupo
+group: nomeDoNovoGrupo 
 
 
 A = {
@@ -152,7 +152,7 @@ A = {
 	exemplo,  42
 }","-- dies ist ein Beispiel
 
-group: nameDesDatensatzes
+group: nameDesDatensatzes 
 
 
 A = {
@@ -160,7 +160,7 @@ A = {
 	beispiel,  42
 }","-- éste es un ejemplo
 
-group: nombreDeNuevoGrupo
+group: nombreDeNuevoGrupo 
 
 
 A = {
@@ -168,14 +168,14 @@ A = {
 	ejemplo,  42
 }","-- 예시입니다
 
-그룹: nameOfTheNewGroup
+그룹: nameOfTheNewGroup 
 
 
 A = {
 	a:string, b:number
 	example,  42
 }","-- questo è un esempio
-group: nomeDelNuovoGruppo
+group: nomeDelNuovoGruppo 
 
 A = {
 	a:string, b:number
@@ -245,7 +245,7 @@ calc.editors.ra.toolbar.xor,xor,ou exclusivo (xor),Xor,xor,배타적 논리,xor
 calc.editors.ra.toolbar.xor-content,"<div><span class=""math"">&sigma;</span> a < b <b class=""math"">⊕</b> b <span class=""math"">≠</span> c ( A )</div>","<div><span class=""math"">&sigma;</span> a < b <b class=""math"">⊕</b> b <span class=""math"">≠</span> c ( A )</div>","<div><span class=""math"">&sigma;</span> a < b <b class=""math"">⊕</b> b <span class=""math"">≠</span> c ( A )</div>","<div><span class=""math"">&sigma;</span> a < b <b class=""math"">⊕</b> b <span class=""math"">≠</span> c ( A )</div>","<div><span class=""math"">&sigma;</span> a < b <b class=""math"">⊕</b> b <span class=""math"">≠</span> c ( A )</div>","<div><span class=""math"">&sigma;</span> a < b <b class=""math"">⊕</b> b <span class=""math"">≠</span> c ( A )</div>"
 calc.editors.ra.toolbar.or,or,ou,Oder,ó,논리합,o
 calc.editors.ra.toolbar.or-content,"<div><span class=""math"">&sigma;</span> a < b <b class=""math"">∨</b> b <span class=""math"">≠</span> c ( A )</div>","<div><span class=""math"">&sigma;</span> a < b <b class=""math"">∨</b> b <span class=""math"">≠</span> c ( A )</div>","<div><span class=""math"">&sigma;</span> a < b <b class=""math"">∨</b> b <span class=""math"">≠</span> c ( A )</div>","<div><span class=""math"">&sigma;</span> a < b <b class=""math"">∨</b> b <span class=""math"">≠</span> c ( A )</div>","<div><span class=""math"">&sigma;</span> a < b <b class=""math"">∨</b> b <span class=""math"">≠</span> c ( A )</div>","<div><span class=""math"">&sigma;</span> a < b <b class=""math"">∨</b> b <span class=""math"">≠</span> c ( A )</div>"
-calc.editors.ra.toolbar.not,not,não,Verneinung,no,논리적 부정,non
+calc.editors.ra.toolbar.not,not,não,Verneinung,no,논리적 부정,non 
 calc.editors.ra.toolbar.not-content,<div>&sigma,<div>&sigma, <b>¬</b>(a < b) ( A )</div>,<div>&sigma, <b>¬</b>(a < b) ( A )</div>,<div>&sigma
 calc.editors.ra.toolbar.equals,equals,igual,Gleich,igual,등호,uguale
 calc.editors.ra.toolbar.equals-content,<div>&sigma,<div>&sigma, a <b>=</b> b ( A )</div>,<div>&sigma, a <b>=</b> b ( A )</div>,<div>&sigma
@@ -263,17 +263,17 @@ calc.editors.ra.toolbar.division,division,divisão,Division (Relationen),divisi�
 calc.editors.ra.toolbar.division-content,<div><b>(</b> A <b>) ÷ (</b> B <b>)</b></div>,<div><b>(</b> A <b>) ÷ (</b> B <b>)</b></div>,<div><b>(</b> A <b>) ÷ (</b> B <b>)</b></div>,<div><b>(</b> A <b>) ÷ (</b> B <b>)</b></div>,<div><b>(</b> A <b>) ÷ (</b> B <b>)</b></div>,<div><b>(</b> A <b>) ÷ (</b> B <b>)</b></div>
 calc.editors.ra.toolbar.subtraction,subtraction,subtração,Mengendifferenz,resta,차집합,differenza
 calc.editors.ra.toolbar.subtraction-content,"<div><b>(</b> A <b>) - (</b> B <b>)</b></div>
-<div><b>(</b> A <b>)
+<div><b>(</b> A <b>) 
  (</b> B <b>)</b></div>","<div><b>(</b> A <b>) - (</b> B <b>)</b></div>
-<div><b>(</b> A <b>)
+<div><b>(</b> A <b>) 
  (</b> B <b>)</b></div>","<div><b>(</b> A <b>) - (</b> B <b>)</b></div>
-<div><b>(</b> A <b>)
+<div><b>(</b> A <b>) 
  (</b> B <b>)</b></div>","<div><b>(</b> A <b>) - (</b> B <b>)</b></div>
 <div><b>(</b> A <b>) \ (</b> B <b>)</b></div>
 ","<div><b>(</b> A <b>) - (</b> B <b>)</b></div>
 <div><b>(</b> A <b>) \ (</b> B <b>)</b></div>
 ","<div><b>(</b> A <b>) - (</b> B <b>)</b></div>
-<div><b>(</b> A <b>)
+<div><b>(</b> A <b>) 
  (</b> B <b>)</b></div>"
 calc.editors.ra.toolbar.cross-join,cross join,junção cruzada (cross join),cross join (Kreuzprodukt),cross join (cruzado),카디션 프로덕트,prodotto cartesiano
 calc.editors.ra.toolbar.cross-join-content,"<div><b>(</b> A <b>) <b class=""math"">⨯</b> (</b> B <b>)</b></div>","<div><b>(</b> A <b>) <b class=""math"">⨯</b> (</b> B <b>)</b></div>","<div><b>(</b> A <b>) <b class=""math"">⨯</b> (</b> B <b>)</b></div>","<div><b>(</b> A <b>) <b class=""math"">⨯</b> (</b> B <b>)</b></div>","<div><b>(</b> A <b>) <b class=""math"">⨯</b> (</b> B <b>)</b></div>","<div><b>(</b> A <b>) <b class=""math"">⨯</b> (</b> B <b>)</b></div>"
@@ -361,13 +361,13 @@ calc.editors.sql.toolbar.select,select clause,cláusula select,select-Klausel,se
 calc.editors.sql.toolbar.select-content,"<p>SELECT * FROM A</p><div>SELECT a, A.b, A.c FROM A</div>","<p>SELECT * FROM A</p><div>SELECT a, A.b, A.c FROM A</div>","<p>SELECT * FROM A</p><div>SELECT a, A.b, A.c FROM A</div>","<p>SELECT * FROM A</p><div>SELECT a, A.b, A.c FROM A</div>","<p>SELECT * FROM A</p><div>SELECT a, A.b, A.c FROM A</div>","<p>SELECT * FROM A</p><div>SELECT a, A.b, A.c FROM A</div>"
 calc.editors.sql.toolbar.from,from clause,cláusula from,from-Klausel,cláusula from (desde),from 문,Clausola from
 calc.editors.sql.toolbar.from-content,"<div>SELECT * <br>FROM A, B as b<br>INNER JOIN C NATURAL</div>","<div>SELECT * <br>FROM A, B as b<br>INNER JOIN C NATURAL</div>","<div>SELECT * <br>FROM A, B as b<br>INNER JOIN C NATURAL</div>","<div>SELECT * <br>FROM A, B as b<br>INNER JOIN C NATURAL</div>","<div>SELECT * <br>FROM A, B as b<br>INNER JOIN C NATURAL</div>","<div>SELECT * <br>FROM A, B as b<br>INNER JOIN C NATURAL</div>"
-calc.editors.sql.toolbar.where,where  clause,cláusula where,where-Klausel,cláusula where (donde),where 문,Clausola where
+calc.editors.sql.toolbar.where,where  clause,cláusula where,where-Klausel,cláusula where (donde),where 문,Clausola where 
 calc.editors.sql.toolbar.where-content,"SELECT * FROM A, B <br>where A.a = B.a or false","SELECT * FROM A, B <br>where A.a = B.a or false","SELECT * FROM A, B <br>where A.a = B.a or false","SELECT * FROM A, B <br>where A.a = B.a or false","SELECT * FROM A, B <br>where A.a = B.a or false","SELECT * FROM A, B <br>where A.a = B.a or false"
 calc.editors.sql.toolbar.group-by,group by clause,cláusula group by,group-b-Klausel,cláusula agrupar por,group by 문,Clausola group by
 calc.editors.sql.toolbar.group-by-content,"SELECT a, COUNT(b) as num <br>FROM A <br>GROUP BY a","SELECT a, COUNT(b) as num <br>FROM A <br>GROUP BY a","SELECT a, COUNT(b) as num <br>FROM A <br>GROUP BY a","SELECT a, COUNT(b) as num <br>FROM A <br>GROUP BY a","SELECT a, COUNT(b) as num <br>FROM A <br>GROUP BY a","SELECT a, COUNT(b) as num <br>FROM A <br>GROUP BY a"
-calc.editors.sql.toolbar.having,having  clause,cáusula having  clause,having-Klausel,teniendo cláusula,having 문,Clausola having
+calc.editors.sql.toolbar.having,having  clause,cáusula having  clause,having-Klausel,teniendo cláusula,having 문,Clausola having 
 calc.editors.sql.toolbar.having-content,"SELECT a, SUM(b) as sum <br>FROM A <br>GROUP BY a<br>having sum > 10","SELECT a, SUM(b) as sum <br>FROM A <br>GROUP BY a<br>having sum > 10","SELECT a, SUM(b) as sum <br>FROM A <br>GROUP BY a<br>having sum > 10","SELECT a, SUM(b) as sum <br>FROM A <br>GROUP BY a<br>having sum > 10","SELECT a, SUM(b) as sum <br>FROM A <br>GROUP BY a<br>having sum > 10","SELECT a, SUM(b) as sum <br>FROM A <br>GROUP BY a<br>having sum > 10"
-calc.editors.sql.toolbar.order-by,order by  clause,cláusula order by,order-by-Klausel,cláusula ordenar por,order by 문,Clausola order by
+calc.editors.sql.toolbar.order-by,order by  clause,cláusula order by,order-by-Klausel,cláusula ordenar por,order by 문,Clausola order by 
 calc.editors.sql.toolbar.order-by-content,"<p>SELECT * FROM A ORDER BY a asc, b desc</p><div>SELECT * FROM A ORDER BY 1, 2, 3</div>","<p>SELECT * FROM A ORDER BY a asc, b desc</p><div>SELECT * FROM A ORDER BY 1, 2, 3</div>","<p>SELECT * FROM A ORDER BY a asc, b desc</p><div>SELECT * FROM A ORDER BY 1, 2, 3</div>","<p>SELECT * FROM A ORDER BY a asc, b desc</p><div>SELECT * FROM A ORDER BY 1, 2, 3</div>","<p>SELECT * FROM A ORDER BY a asc, b desc</p><div>SELECT * FROM A ORDER BY 1, 2, 3</div>","<p>SELECT * FROM A ORDER BY a asc, b desc</p><div>SELECT * FROM A ORDER BY 1, 2, 3</div>"
 calc.editors.sql.toolbar.limit,limit clause,cláusula limit,limit-Klausel,cláusula límite,limit 문,Clausola limit
 calc.editors.sql.toolbar.limit-content,SELECT * FROM A <br>LIMIT 10 OFFSET 0,SELECT * FROM A <br>LIMIT 10 OFFSET 0,SELECT * FROM A <br>LIMIT 10 OFFSET 0,SELECT * FROM A <br>LIMIT 10 OFFSET 0,SELECT * FROM A <br>LIMIT 10 OFFSET 0,SELECT * FROM A <br>LIMIT 10 OFFSET 0
@@ -390,13 +390,3 @@ calc.editors.ra.inline-editor.row-name,Name,Nome,Name,Nombre,Name,Nome
 calc.editors.ra.inline-editor.row-type,Type,Tipo,Typ,Escriba,Type,Tipo
 calc.editors.ra.inline-editor.input-relation-name,Relation Name,Nome da Relação,Relations Name,Nombre de la relación,Relation Name,Nome relazione
 calc.navigation.imprint,Imprint,Impressão,Impressum,Imprimir,Imprint,Impressum
-calc.editors.ra.button-download-csv,,,,,,Scarica CSV
-calc.editors.ra.button-download-jpg,,,,,,Scarica JPEG
-calc.editors.ra.button-download-query,,,,,,Scarica query (txt)
-calc.editors.ra.button-zoom-center,,,,,,Centra
-calc.editors.ra.button-zoom-in,,,,,,Ingrandisci
-calc.editors.ra.button-zoom-out,,,,,,Rimpiccolisci
-calc.editors.ra.button-zoom-reset,,,,,,Ripristina zoom
-calc.menu.recently-used,,,,,,Usato di recente
-calc.result.exec.time,,,,,,Tempo di esecuzione
-

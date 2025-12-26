@@ -26,17 +26,15 @@ ReactDOM.render(
 	document.getElementById('root'),
 );
 
-
 // init
 {
 	const action: SET_LOCALE = {
 		type: 'SET_LOCALE',
 		locale: i18n.language,
 	};
-	store.dispatch(action);
-}
 
-// load all predefined groups
-for (const action of loadStaticGroups()) {
-	store.dispatch(action);
+	// load all predefined groups
+	for (const action of loadStaticGroups()) {
+		store.dispatch(action);
+	}
 }

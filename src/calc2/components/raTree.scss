@@ -5,9 +5,9 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 .ra-tree {
-	@import './raTreeFamilyTree';
-
 	font-size: 18px;
+
+	@import './raTreeFamilyTree';
 	
 	li .node {
 		cursor: pointer;

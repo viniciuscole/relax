@@ -11,11 +11,13 @@ import {string} from "prop-types";
 
 const ld_sb: any = require('../data/sb.txt');
 const ld_ufes: any = require('../data/ufes.txt');
-const ld: any = require('../data/uibk.txt');
+const ld: any = require('../data/misc.txt');
+const ld_uibk: any = require('../data/uibk.txt');
 const LOCAL_DATA: { [id: string]: string } = {
 	'sb': ld_sb.default ? ld_sb.default : '',
   'ufes': ld_ufes.default ? ld_ufes.default : '',
-  'uibk': ld.default ? ld.default : '',
+  'misc': ld.default ? ld.default : '',
+  'uibk': ld_uibk.default ? ld_uibk.default : '',
 };
 
 export function parseGroupsFromDefinition(text: string, groupInfo: GroupInfo, sourceInfo: SourceInfo) {
@@ -178,6 +180,9 @@ export function loadGroupsFromSource(source: GroupSourceType, id: string, mainta
           success: gist_success,
           crossDomain: true,
           statusCode: {
+            403: function (data: any) {
+              reject(new Error(data.responseJSON.message));
+            },
             404: function () {
               // tslint:disable-next-line: prefer-template
               reject(new Error('gist ' + id + ' not found'));

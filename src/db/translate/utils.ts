@@ -15,7 +15,7 @@ export function mapPostOrder<T extends astNode>(
 	// let assignments: any[] | undefined = node.assignments;
 	// let from: sqlAst.statement['from'] | undefined = node['from'];
 	// let statement: sqlAst.relationFromSubstatement['statement'] | undefined = undefined;
-	//
+	// 
 	// let changed = false;
 
 	// descent
@@ -111,13 +111,13 @@ export function forEachPreOrder(
 		forEachPreOrder(node.statement, func, descentIntoAssignments);
 	}
 
-	if (typeof node.child !== 'undefined') {
+	if ('child' in node && typeof node.child !== 'undefined') {
 		forEachPreOrder(node.child, func, descentIntoAssignments);
 	}
-	if (typeof node.child2 !== 'undefined') {
+	if ('child2' in node && typeof node.child2 !== 'undefined') {
 		forEachPreOrder(node.child2, func, descentIntoAssignments);
 	}
-	if (typeof node.assignments !== 'undefined' && descentIntoAssignments === true) {
+	if ('assignments' in node && typeof node.assignments !== 'undefined' && descentIntoAssignments === true) {
 		for (const a of node.assignments) {
 			forEachPreOrder(a, func, descentIntoAssignments);
 		}

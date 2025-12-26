@@ -8,6 +8,7 @@ export const langPT = {
       'criar uma nova rela\u00e7\u00e3o aninhada usando o editor',
     'calc.editors.ra.toolbar.assignment-content':
       '<div><b>X = </b> pi a ( A )\n<br /><b>Y = </b> pi b ( b )\n<br />( X ) <span class="math">&cup;</span> ( Y )<br /></div>',
+    'calc.editors.ra.toolbar.recursive-assignment-content': '<b class="math">μ</b> t = S <span class="math">&cup;</span> ( t <b>⨝</b> T )\n<br /><b>mu</b> t = S union ( t join T )\n<br /><b>recursive</b> t = S <span class="math">&cup;</span> ( t ⨝ T )',
     'calc.editors.ra.toolbar.greater-or-equals-content': '<div>&sigma',
     'calc.editors.ra.toolbar.duplicate-elimination-content':
       '<b class=\"math\">∂</b> <b>(</b> A <b>)</b>\n<br><b>delta</b> A',
@@ -23,13 +24,13 @@ export const langPT = {
       'Nome do grupo (importado de SQL)',
     'db.messages.parser.error-group-non-unique-group-name':
       'nome de grupo duplicado: {{name}}',
-    'calc.editors.sql.button-download': 'Download',
+    'calc.editors.sql.button-download': 'baixar',
     'calc.editors.ra.toolbar.single-line-comment-content':
       '<span class="math">&pi;</span> a, b A <b>-- coment\u00e1rio \u00fatil</b>',
     'calc.editors.group.tab-name': 'Editor de Grupo',
     'calc.editors.ra.toolbar.cross-join-content':
       '<div><b>(</b> A <b>) <b class="math">\u2a2f</b> (</b> B <b>)</b></div>',
-    'calc.editors.ra.inline-editor.button-download-csv': 'Download CSV',
+    'calc.editors.ra.inline-editor.button-download-csv': 'Baixar (CSV)',
     'db.messages.exec.error-column-not-in-both-schemas':
       'coluna "{{column}}" n\u00e3o pode ser encontrada em ambos os esquemas de jun\u00e7\u00e3o',
     'calc.editors.ra.toolbar.intersect': 'intersec\u00e7\u00e3o',
@@ -49,13 +50,13 @@ export const langPT = {
     'calc.editors.ra.toolbar.union': 'uni\u00e3o',
     'calc.navigation.help': 'Ajuda',
     'editor.alert-message-headers.warning': 'Perigo',
-    'calc.editors.ra.toolbar.single-line-comment': 'coment\u00e1rio em linha',
+    'calc.editors.ra.toolbar.single-line-comment': 'coment\u00e1rio de linha \u00fanica',
     'db.messages.parser.error-sqldump-insert-wrong-number-columns':
       'n\u00famero de valores != n\u00famero de colunas',
     'calc.editors.ra.toolbar.left-semi-join-content':
       '<div><b>(</b> A <b class="math">) \u22c9 (</b> B <b>)</b></div>',
     'calc.editors.group.modal-sqldump.button-cancel': 'Cancelar',
-    'calc.editors.sql.toolbar.having': 'c\u00e1usula having  clause',
+    'calc.editors.sql.toolbar.having': 'cl\u00e1usula having',
     'db.messages.exec.error-datatype-not-specified-for-col':
       'tipo de dados para a coluna {{index}} ("{{column}}") n\u00e3o foi especificado',
     'calc.editors.sql.toolbar.select': 'cl\u00e1usula select',
@@ -100,17 +101,17 @@ export const langPT = {
     'calc.menu.headline': 'Carregue um Dataset',
     'calc.editors.ra.toolbar.intersect-content':
       '<div><b>(</b> A <b>) <span class="math">&cap;</span> (</b> B <b>)</b></div>',
-    'calc.editors.ra.button-download': 'Download',
-    'calc.editors.ra.button-download-csv': 'Resultado',
-    'calc.editors.ra.button-download-query': 'Query',
+    'calc.editors.ra.button-download': 'baixar',
+    'calc.editors.ra.button-download-csv': 'Resultado (CSV)',
+    'calc.editors.ra.button-download-query': 'Consulta',
     'calc.editors.ra.button-zoom-in': 'Aumentar zoom',
     'calc.editors.ra.button-zoom-out': 'Diminuir zoom',
     'calc.editors.ra.button-zoom-reset': 'Redefinir zoom',
     'calc.editors.ra.button-zoom-center': 'Alinhar à visualização',
     'db.messages.parser.error-sql-group-by-missing':
-      'group by est\u00e1 faltando',
+      'group by est\u00e1 ausente',
     'db.messages.exec.error-could-not-compare-different-types':
-      'n\u00e3o foi poss\u00edvel comparar o valor se os tipos forem diferentes: {{typeA}}! = {{typeB}}',
+      'n\u00e3o \u00e9 poss\u00edvel comparar valores de tipos diferentes: {{typeA}}! = {{typeB}}',
     'calc.editors.ra.toolbar.autoreplace-operators.none':
       'sem substitui\u00e7\u00e3o',
     'calc.editors.ra.toolbar.selection': 'Sele\u00e7\u00e3o',
@@ -134,7 +135,7 @@ export const langPT = {
     'db.messages.exec.error-join-would-produce-non-unique-columns':
       'a jun\u00e7\u00e3o resultaria em nomes de coluna n\u00e3o \u00fanicos',
     'db.messages.exec.error-case-when-expects-results-of-same-type':
-      '<i> CASE WHEN condi\u00e7\u00e3o THEN resultado END </i> espera que todos os <i> resultados <i /> sejam do mesmo tipo',
+      '<i>CASE WHEN condi\u00e7\u00e3o THEN resultado END</i> espera que todos os <i>resultados<i/> sejam do mesmo tipo',
     'calc.editors.ra.toolbar.rename':
       'renomear rela\u00e7\u00e3o / renomear colunas',
     'calc.menu.datasets': 'Datasets',
@@ -143,7 +144,7 @@ export const langPT = {
     'calc.maintainer-groups.savben': 'Istituto di Istruzione Superiore Savoia Benincasa',
     'calc.editors.ra.toolbar.natural-join': 'natural join / \u03b8-join',
     'db.messages.translate.warning-distinct-missing':
-      'DISTINCT est\u00e1 faltando',
+      'DISTINCT est\u00e1 ausente',
     'calc.editors.ra.toolbar.multi-line-comment': 'coment\u00e1rio multilinha',
     'calc.editors.group.button-use_plural': 'Use o primeiro Grupo no Editor',
     'calc.messages.gist-load-success': 'gist carregado com sucesso',
@@ -199,11 +200,12 @@ export const langPT = {
       'n\u00famero inv\u00e1lido de colunas na linha {{line}}',
     'calc.editors.group.button-exec': 'Visualizar',
     'db.messages.exec.error-could-not-change-rel-alias-ambiguity':
-      'n\u00e3o foi poss\u00edvel definir o \u201dalias\u201d da rela\u00e7\u00e3o \u201c{{alias}}\u201d por causa da ambiguidade',
+      'n\u00e3o \u00e9 poss\u00edvel definir o \u201dalias\u201d da rela\u00e7\u00e3o \u201c{{alias}}\u201d por causa da ambiguidade',
     'editor.pegjs-error.no-input-found': 'nenhuma entrada encontrada',
     'db.messages.parser.error-group-header-name-missing':
-      'o nome do grupo est\u00e1 faltando (group: ....)',
+      'o nome do grupo est\u00e1 ausente (group: ....)',
     'calc.editors.ra.toolbar.assignment': 'atribui\u00e7\u00e3o',
+    'calc.editors.ra.toolbar.recursive-assignment': 'rela\u00e7\u00e3o recursiva',
     'calc.editors.ra.toolbar.or-content':
       '<div><span class="math">&sigma;</span> a < b <b class="math">\u2228</b> b <span class="math">\u2260</span> c ( A )</div>',
     'calc.editors.ra.toolbar.right-semi-join': 'right semi join',
@@ -217,7 +219,7 @@ export const langPT = {
     'calc.editors.group.modal-sqldump.button-close': 'Fechar',
     'calc.editors.button-history': 'Hist\u00f3rico',
     'calc.editors.ra.inline-editor.button-upload-csv': 'Upload CSV',
-    'calc.navigation.language': 'Linguagem',
+    'calc.navigation.language': 'Idioma',
     'calc.menu.create-own-dataset-headline': 'Crie seu pr\u00f3prio Dataset',
     'calc.editors.group.toolbar.import-sql': 'Importar SQL-dump',
     'calc.editors.ra.toolbar.autoreplace-operators.math2plain': '\u03c0 => pi',
@@ -229,7 +231,7 @@ export const langPT = {
     'editor.inline-relation-editor.error-column-name-missing':
       'nome da coluna ausente na coluna {{index}}',
     'db.messages.exec.error-could-not-rename-ambiguity':
-      'n\u00e3o foi poss\u00edvel definir o novo nome "{{newName}}" para "{{oldName}}" devido a ambiguidade em {{schema}}',
+      'n\u00e3o \u00e9 poss\u00edvel definir o novo nome "{{newName}}" para "{{oldName}}" devido \u00e0 ambiguidade em {{schema}}',
     'calc.navigation.take-a-tour': 'Fa\u00e7a um Tour',
     'calc.editors.ra.toolbar.natural-join-content':
       '<div><b>(</b> A <b>) <b class="math">\u22c8</b> (</b> B <b>)</b></div>\n<div><b>(</b> A <b class="math">) \u22c8 A.a \u2265 B.a (</b> B <b>)</b></div>',
@@ -246,7 +248,7 @@ export const langPT = {
     'db.messages.exec.error-column-index-out-of-range':
       '\u00edndice da coluna "{{column}}" est\u00e1 fora do intervalo no esquema {{schema}}; \u00edndice come\u00e7a em 1',
     'calc.messages.error-query-missing': 'nenhuma consulta encontrada',
-    'calc.editors.group.button-download': 'Download',
+    'calc.editors.group.button-download': 'baixar',
     'calc.messages.error-query-missing-assignments-found':
       'apenas atribui\u00e7\u00f5es encontradas; falta a consulta <a href="help.htm#relalg-assignment" target="_blank"> Ajuda - Tarefas </a>',
     'db.messages.parser.error-group-unknown-header':
@@ -257,7 +259,7 @@ export const langPT = {
     'calc.editors.group.button-use': 'Use Grupo no Editor',
     'editor.alert-message-headers.success': 'Sucesso',
     'editor.codemirror-placeholder':
-      'Digite sua consulta aqui\n\nAtalhos do teclado:\n\texecutar declara\u00e7\u00e3ot:    [CTRL]+[RETURN]\n\texecutar sele\u00e7\u00e3o:    [CTRL]+[SHIFT]+[RETURN]\n\tautocompletar:         [CTRL]+[SPACE]\n',
+      'Digite sua consulta aqui ...\n\nAtalhos do teclado:\n\texecutar declara\u00e7\u00e3o:    [CTRL]+[RETURN]\n\texecutar sele\u00e7\u00e3o:       [CTRL]+[SHIFT]+[RETURN]\n\tautocompletar:          [CTRL]+[SPACE]\n',
     'calc.editors.ra.toolbar.lesser-or-equals': 'menor ou igual',
     'calc.navigation.feedback': 'Feedback',
     'calc.editors.ra.button-execute-selection': 'Executar sele\u00e7\u00e3o',
@@ -283,7 +285,7 @@ export const langPT = {
     'calc.editors.group.toolbar.add-new-relation-content':
       'Abrir editor de rela\u00e7\u00f5es',
     'db.messages.exec.error-case-when-condition-must-be-boolean':
-      'a condi\u00e7\u00e3o de um CASE WHEN deve ser do tipo booleano',
+      'a condi\u00e7\u00e3o de um CASE WHEN deve ser uma express\u00e3o booleana',
     'calc.maintainer-groups.temp': 'Tempor\u00e1rio',
     'editor.pegjs-error.end-of-input': 'fim da entrada',
     'calc.editors.sql.toolbar.where-content':
@@ -301,7 +303,7 @@ export const langPT = {
     'calc.editors.ra.inline-editor.button-cancel': 'Cancelar',
     'editor.error-at-line-x': 'na linha {{line}}',
     'db.messages.exec.error-schemas-not-unifiable':
-      'os esquemas n\u00e3o s\u00e3o unific\u00e1veis: os tipos ou o tamanho diferem: {{schemaA}} e {{schemaB}}',
+      'os esquemas n\u00e3o podem ser unificados: os tipos ou o tamanho diferem: {{schemaA}} e {{schemaB}}',
     'calc.editors.ra.toolbar.autoreplace-operators.title':
       'substitui\u00e7\u00e3o de operador',
     'calc.menu.load-gist-insert-placeholder': 'gist ID',
@@ -311,7 +313,7 @@ export const langPT = {
     'calc.editors.sql.toolbar.limit-content':
       'SELECT * FROM A <br>LIMIT 10 OFFSET 0',
     'db.messages.exec.error-column-not-unique':
-      'n\u00e3o foi poss\u00edvel adicionar a coluna "{{column}}" devido a ambiguidade',
+      'n\u00e3o \u00e9 poss\u00edvel adicionar a coluna "{{column}}" devido \u00e0 ambiguidade',
     'editor.alert-message-headers.info': 'Info',
     'calc.editors.ra.toolbar.subtraction': 'subtra\u00e7\u00e3o',
     'calc.editors.insert-relation-title': 'Inserir',

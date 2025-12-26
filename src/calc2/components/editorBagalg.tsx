@@ -22,7 +22,7 @@ export const KEYWORDS_RELALG = [
 	'delta', 'pi', 'sigma', 'rho', 'tau', '<-', 'intersect', 'union', '/', '-', '\\', 'x', 'cross join', 'join',
 	'inner join', 'natural join', 'left join', 'right join', 'left outer join',
 	'right outer join', 'full outer join', 'left semi join', 'right semi join', 'anti join',
-	'and', 'or', 'xor', '||',
+	'and', 'or', 'xor', '||', 'not between', 'between', 'mu', 'recursive',
 ];
 
 type Props = {
@@ -73,6 +73,9 @@ export class EditorBagalg extends React.Component<Props, State> {
 				}}
 				mode="bagalg"
 				execFunction={(self: EditorBase, text: string, offset) => {
+					// add to history first
+					self.historyAddEntry(text);
+
 					const ast = parseRelalg(text, Object.keys(relations), false);
 					replaceVariables(ast, relations);
 
@@ -88,9 +91,6 @@ export class EditorBagalg extends React.Component<Props, State> {
 
 					const root = relalgFromRelalgAstRoot(ast, relations);
 					root.check();
-
-
-					self.historyAddEntry(text);
 
 					if (self.props.enableInlineRelationEditor) {
 						self.addInlineRelationMarkers(ast);
@@ -353,6 +353,12 @@ export class EditorBagalg extends React.Component<Props, State> {
 								onClick: item => this.replaceText(item, '= '),
 								tooltipTitle: 'calc.editors.ra.toolbar.assignment',
 								tooltip: 'calc.editors.ra.toolbar.assignment-content',
+							},
+							{
+								label: 'μ',
+								onClick: this.replaceText,
+								tooltipTitle: 'calc.editors.ra.toolbar.recursive-assignment',
+								tooltip: 'calc.editors.ra.toolbar.recursive-assignment-content',
 							},
 							{
 								label: '--',

@@ -83,21 +83,47 @@ all
     }
 
 TRC_Expr
-  = '{' _ proj: (listOfNamedColumnExpressions / listOfColumns) _ '|' _ formula:Formula _ '}' 
+  = '{' _ proj: (listOfNamedColumnExpressions / listOfColumns) _ '|' _ formula:Formula _ '}'
 	{
-		const nonUniquevariables = proj.flatMap(p => {
-			if (p.type === 'namedColumnExpr' && p.child.func === 'columnValue') {
-				return [p.child.args[1]]
-			}
-			if (p.type === 'namedColumnExpr') {
-				return p.child.args.map(a => a.args[1])
-			}
-			return [p.relAlias ? p.relAlias : p.name]
-		})
-		.filter(v => v)
+		function collectVariableNames(obj, found = new Set()) {
+			if (Array.isArray(obj)) {
+				obj.forEach(item => collectVariableNames(item, found));
+			} else if (obj && typeof obj === 'object') {
+				// columnValue("col", "alias") → use alias
+				if (obj.func === 'columnValue' && Array.isArray(obj.args) && obj.args.length > 1) {
+					const variable = obj.args[1];
+					if (typeof variable === 'string') {
+						found.add(variable);
+					}
+				}
 
-		const variables = [...new Set(nonUniquevariables)]
-		return createTrcRoot(variables, formula, proj)
+				// relAlias exists
+				if (typeof obj.relAlias === 'string') {
+					found.add(obj.relAlias);
+				}
+
+				// Special case: relAlias is null, but variable name seems to be used explicitly
+				if (
+					obj.relAlias === null &&
+					typeof obj.name === 'string' &&
+					['columnName', 'column'].includes(obj.type)
+				) {
+					found.add(obj.name);
+				}
+
+				// Run recursively over properties
+				for (const key in obj) {
+					if (obj.hasOwnProperty(key)) {
+						collectVariableNames(obj[key], found);
+					}
+				}
+			}
+
+			return found;
+		}
+
+		const uniqueVariables = Array.from(collectVariableNames(proj));
+		return createTrcRoot(uniqueVariables, formula, proj)
 	}
 
 Formula = LogicalExpression
@@ -379,6 +405,18 @@ expr_rest_boolean_conj
 		};
 	}
 
+expr_rest_between
+= __ neg:('not'i __)? 'between'i __ lower:expr_precedence4 __ 'and'i __ upper:expr_precedence4
+	{
+		return {
+			type: 'valueExpr',
+			datatype: 'boolean',
+			func: neg ? 'notBetween' : 'between',
+			args: [undefined, lower, upper],
+			codeInfo: getCodeInfo()
+		};
+	}
+
 expr_rest_boolean_comparison
 = _ o:comparisonOperatorsIsOrIsNot _ right:valueExprConstantNull
 	{
@@ -402,7 +440,7 @@ expr_rest_boolean_comparison
 			codeInfo: getCodeInfo()
 		};
 	}
-/ _ o:('like'i / 'ilike'i) _ right:valueExprConstants
+/ _ o:('like'i / 'ilike'i / 'rlike'i / 'regexp'i) _ right:valueExprConstants
 	{
 		if(right.datatype !== 'string'){
 			error(t('db.messages.parser.error-valueexpr-like-operand-no-string'));
@@ -484,8 +522,9 @@ valueExprFunctionsNary
 = func:(
 	('coalesce'i { return ['coalesce', 'null']; })
 	/ ('concat'i { return ['concat', 'string']; })
+	/ ('replace'i { return ['replace', 'string']; })
 )
-'(' _ arg0:valueExpr _ argn:(',' _ valueExpr _ )* ')'
+_ '(' _ arg0:valueExpr _ argn:(',' _ valueExpr _ )* ')'
 	{
 		var args = [arg0];
 		for(var i = 0; i < argn.length; i++){
@@ -502,17 +541,43 @@ valueExprFunctionsNary
 		};
 	}
 
-valueExprFunctionsBinary
+substringTernaryCommaStyle
 = func:(
-	('adddate'i { return ['adddate', 'date']; })
-	/ ('subdate'i { return ['subdate', 'date']; })
-	/ ('mod'i { return ['mod', 'number']; })
-	/ ('add'i { return ['add', 'number']; })
-	/ ('sub'i { return ['sub', 'number']; })
-	/ ('mul'i { return ['mul', 'number']; })
-	/ ('div'i { return ['div', 'number']; })
+	('substring'i { return ['substring', 'string']; })
 )
-'(' _ arg0:valueExpr _ ',' _ arg1:valueExpr _ ')'
+_ '(' _ arg0:valueExpr _ ',' _ arg1:valueExpr _ ',' _ arg2:valueExpr _ ')'
+	{
+		return {
+			type: 'valueExpr',
+			datatype: func[1],
+			func: func[0],
+			args: [arg0, arg1, arg2],
+
+			codeInfo: getCodeInfo()
+		};
+	}
+
+substringTernaryFromForStyle
+= func:(
+	('substring'i { return ['substring', 'string']; })
+)
+_ '(' _ arg0:valueExpr _ 'from'i _ arg1:valueExpr _ 'for'i _ arg2:valueExpr _ ')'
+	{
+		return {
+			type: 'valueExpr',
+			datatype: func[1],
+			func: func[0],
+			args: [arg0, arg1, arg2],
+
+			codeInfo: getCodeInfo()
+		};
+	}
+
+substringBinaryCommaStyle
+= func: (
+	('substring'i { return ['substring', 'string']; })
+)
+_ '(' _ arg0:valueExpr _ ',' _ arg1:valueExpr _ ')'
 	{
 		return {
 			type: 'valueExpr',
@@ -524,20 +589,89 @@ valueExprFunctionsBinary
 		};
 	}
 
+substringBinaryFromForStyle
+= func: (
+	('substring'i { return ['substring', 'string']; })
+)
+_ '(' _ arg0:valueExpr _ 'from'i _ arg1:valueExpr _ ')'
+	{
+		return {
+			type: 'valueExpr',
+			datatype: func[1],
+			func: func[0],
+			args: [arg0, arg1],
+
+			codeInfo: getCodeInfo()
+		};
+	}
+
+valueExprFunctionsTernary
+= substringTernaryCommaStyle
+/ substringTernaryFromForStyle
+
+valueExprFunctionsBinary
+= substringBinaryCommaStyle
+  / substringBinaryFromForStyle
+  / func:(
+	('adddate'i { return ['adddate', 'date']; })
+	/ ('subdate'i { return ['subdate', 'date']; })
+	/ ('mod'i { return ['mod', 'number']; })
+	/ ('add'i { return ['add', 'number']; })
+	/ ('sub'i { return ['sub', 'number']; })
+	/ ('mul'i { return ['mul', 'number']; })
+	/ ('div'i { return ['div', 'number']; })
+	/ ('power'i { return ['power', 'number']; })
+	/ ('log'i { return ['log', 'number']; })
+	/ ('repeat'i { return ['repeat', 'string']; })
+)
+_ '(' _ arg0:valueExpr _ ',' _ arg1:valueExpr _ ')'
+	{
+		return {
+			type: 'valueExpr',
+			datatype: func[1],
+			func: func[0],
+			args: [arg0, arg1],
+
+			codeInfo: getCodeInfo()
+		};
+	}
+/ func:(
+	('cast'i { return ['cast', 'null']; })
+)
+_ '(' _ arg0:valueExpr _ 'as'i _ arg1:('string'i / 'number'i / 'date'i / 'boolean'i) _ ')'
+	{
+		return {
+			type: 'valueExpr',
+			datatype: func[1],
+			func: func[0],
+			args: [arg0, {
+				datatype: 'string',
+				func: 'constant',
+				args: [arg1],
+				codeInfo: getCodeInfo()
+			}],
+
+			codeInfo: getCodeInfo()
+		};
+	}
+
 valueExprFunctionsUnary
 = func:(
 	('upper'i { return ['upper', 'string']; })
 	/ ('ucase'i { return ['upper', 'string']; })
 	/ ('lower'i { return ['lower', 'string']; })
 	/ ('lcase'i { return ['lower', 'string']; })
+	/ ('reverse'i { return ['reverse', 'string']; })
 	/ ('length'i { return ['strlen', 'number']; })
 	/ ('abs'i { return ['abs', 'number']; })
 	/ ('floor'i { return ['floor', 'number']; })
 	/ ('ceil'i { return ['ceil', 'number']; })
 	/ ('round'i { return ['round', 'number']; })
+	/ ('sqrt'i { return ['sqrt', 'number']; })
+	/ ('exp'i { return ['exp', 'number']; })
+	/ ('ln'i { return ['ln', 'number']; })
 
 	/ ('date'i { return ['date', 'date']; })
-
 	/ ('year'i { return ['year', 'number']; })
 	/ ('month'i { return ['month', 'number']; })
 	/ ('day'i { return ['dayofmonth', 'number']; })
@@ -546,7 +680,7 @@ valueExprFunctionsUnary
 	/ ('second'i { return ['second', 'number']; })
 	/ ('dayofmonth'i { return ['dayofmonth', 'number']; })
 )
-'(' _ arg0:valueExpr _ ')'
+_ '(' _ arg0:valueExpr _ ')'
 	{
 		return {
 			type: 'valueExpr',
@@ -572,7 +706,7 @@ valueExprFunctionsNullary
 	/ ('clock_timestamp'i { return ['clock_timestamp', 'date']; })
 	/ ('sysdate'i { return ['clock_timestamp', 'date']; })
 )
-'(' _ ')'
+_ '(' _ ')'
 	{
 		return {
 			type: 'valueExpr',
@@ -681,7 +815,7 @@ reference: https://dev.mysql.com/doc/refman/5.7/en/operator-precedence.html
 2: - (unary minus)
 3: *, /, %
 4: -, +
-5: = (comparison), >=, >, <=, <, <>, !=, IS, LIKE
+5: = (comparison), >=, >, <=, <, <>, !=, IS, LIKE, ILIKE, RLIKE, REGEXP
 6: CASE, WHEN, THEN, ELSE
 7: AND
 8: XOR
@@ -712,7 +846,7 @@ expr_precedence6
 / expr_precedence5
 
 expr_precedence5
-= first:expr_precedence4 rest:( expr_rest_boolean_comparison )+
+= first:expr_precedence4 rest:( expr_rest_boolean_comparison / expr_rest_between )+
 	{ return buildBinaryValueExpr(first, rest); }
 / expr_precedence4
 
@@ -740,6 +874,7 @@ expr_precedence0
 / valueExprFunctionsNullary
 / valueExprFunctionsUnary
 / valueExprFunctionsBinary
+/ valueExprFunctionsTernary
 / valueExprFunctionsNary
 / valueExprColumn
 / '(' _ e:expr_precedence9 _ ')'
@@ -764,6 +899,16 @@ unqualifiedColumnName
 = !(RESERVED_KEYWORD !([0-9a-zA-Z_]+)) a:$([a-zA-Z]+ $[0-9a-zA-Z_]*)
 	{
 		return a;
+	}
+
+columnAsterisk
+= relAlias:(relationName '.')? '*'
+	{
+		return {
+			type: 'column',
+			name: '*',
+			relAlias: relAlias ? relAlias[0] : null
+		};
 	}
 
 columnName
@@ -816,6 +961,11 @@ namedColumnExpr
 / a:columnName
 	{
 		return a;
+	}
+/ col:columnAsterisk
+	{
+		col.alias = null;
+		return col;
 	}
 
 // list of columns (kd.id, kd.name, test) e.g. for the projection
@@ -903,12 +1053,13 @@ RESERVED_KEYWORDS_TRC
 RESERVED_KEYWORDS_FUNCTIONS
 = 'coalesce'i
 / 'concat'i
+/ 'cast'i
+/ 'substring'i
 / 'upper'i
 / 'ucase'i
 / 'lower'i
 / 'lcase'i
 / 'length'i
-/ 'strlen'i
 / 'like'i
 / 'ilike'i
 / 'rlike'i
@@ -924,6 +1075,11 @@ RESERVED_KEYWORDS_FUNCTIONS
 / 'div'i
 / 'mod'i
 / 'abs'i
+/ 'sqrt'i
+/ 'exp'i
+/ 'power'i
+/ 'ln'i
+/ 'log'i
 / 'round'i
 / 'floor'i
 / 'ceil'i

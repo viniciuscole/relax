@@ -166,7 +166,7 @@ unqualifiedColumnName
 			error(t('db.messages.parser.error-sql-invalid-column-name', {str: a}));
 		return a;
 	}
-
+	
 relation
 = a:relationName
 	{
@@ -1034,14 +1034,14 @@ dbDumpRoot
 		return root;
 
 	}
-
+	
 useDbStatement
 = 'use'i __ name:$([a-zA-Z_0-9-]+) _ ';'
-	{
+	{ 
 		return {
-			type: 'groupName',
+			type: 'groupName', 
 			name: name
-		};
+		}; 
 	}
 
 createTableStmt_columnType
@@ -1249,8 +1249,17 @@ expr_rest_boolean_conj
 		};
 	}
 
-
-
+expr_rest_between
+= __ neg:('not'i __)? 'between'i __ lower:expr_precedence4 __ 'and'i __ upper:expr_precedence4
+	{
+		return {
+			type: 'valueExpr',
+			datatype: 'boolean',
+			func: neg ? 'notBetween' : 'between',
+			args: [undefined, lower, upper],
+			codeInfo: getCodeInfo()
+		};
+	}
 
 expr_rest_boolean_comparison
 = _ o:comparisonOperatorsIsOrIsNot _ right:valueExprConstantNull
@@ -1690,7 +1699,7 @@ expr_precedence6
 / expr_precedence5
 
 expr_precedence5
-= first:expr_precedence4 rest:( expr_rest_boolean_comparison )+
+= first:expr_precedence4 rest:( expr_rest_boolean_comparison / expr_rest_between )+
 	{ return buildBinaryValueExpr(first, rest); }
 / expr_precedence4
 

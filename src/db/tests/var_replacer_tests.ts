@@ -623,3 +623,593 @@ QUnit.test('replace operators 3', function (assert) {
 	assert.equal(query, `π a R ⨝ S`);
 	assert.deepEqual(cursor, { line: 1, column: 8 });
 });
+
+QUnit.test('replace operators 4 (#174)', function (assert) {
+	const orgQuery = `pi b (sigma a=0 R)`;
+	const orgCursor = { line: 1, column: 12 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `π b (σ a=0 R)`);
+	assert.deepEqual(cursor, { line: 1, column: 7 });
+});
+
+QUnit.test('replace rename relation operator (plain2math)', function (assert) {
+	const orgQuery = `rho R_prime  (R)`;
+	const orgCursor = { line: 1, column: 12 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `ρ R_prime  (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 10 });
+});
+
+QUnit.test('replace rename relation operator (math2plain)', function (assert) {
+	const orgQuery = `ρ  R_prime (R)`;
+	const orgCursor = { line: 1, column: 11 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `rho  R_prime (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 13 });
+});
+
+QUnit.test('replace rename column operator (plain2math)', function (assert) {
+	const orgQuery = `rho a ->A (R)`;
+	const orgCursor = { line: 1, column: 9 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `ρ a →A (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 6 });
+});
+
+QUnit.test('replace rename column operator (math2plain)', function (assert) {
+	const orgQuery = `ρ a-> A (R)`;
+	const orgCursor = { line: 1, column: 8 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `rho a-> A (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 10 });
+});
+
+QUnit.test('replace order by operator (plain2math)', function (assert) {
+	const orgQuery = `tau a desc R`;
+	const orgCursor = { line: 1, column: 6 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `τ a desc R`);
+	assert.deepEqual(cursor, { line: 1, column: 4 });
+});
+
+QUnit.test('replace order by operator (math2plain)', function (assert) {
+	const orgQuery = `τ a desc R`;
+	const orgCursor = { line: 1, column: 4 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `tau a desc R`);
+	assert.deepEqual(cursor, { line: 1, column: 6 });
+});
+
+QUnit.test('replace group by operator (plain2math)', function (assert) {
+	const orgQuery = `gamma b; count(*)->n (R)`;
+	const orgCursor = { line: 1, column: 20 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `γ b; count(*)→n (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 15 });
+});
+
+QUnit.test('replace group by operator (math2plain)', function (assert) {
+	const orgQuery = `γ b; count(*)→n (R)`;
+	const orgCursor = { line: 1, column: 15 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `gamma b; count(*)->n (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 20 });
+});
+
+QUnit.test('replace union operator (plain2math)', function (assert) {
+	const orgQuery = `S  union   T`;
+	const orgCursor = { line: 1, column: 10 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `S  ∪   T`);
+	assert.deepEqual(cursor, { line: 1, column: 6 });
+});
+
+QUnit.test('replace union operator (math2plain)', function (assert) {
+	const orgQuery = `S   ∪  T`;
+	const orgCursor = { line: 1, column: 6 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `S   union  T`);
+	assert.deepEqual(cursor, { line: 1, column: 10 });
+});
+
+QUnit.test('replace intersect operator (plain2math)', function (assert) {
+	const orgQuery = `S  intersect   T`;
+	const orgCursor = { line: 1, column: 14 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `S  ∩   T`);
+	assert.deepEqual(cursor, { line: 1, column: 6 });
+});
+
+QUnit.test('replace intersect operator (math2plain)', function (assert) {
+	const orgQuery = `S   ∩  T`;
+	const orgCursor = { line: 1, column: 8 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `S   intersect  T`);
+	assert.deepEqual(cursor, { line: 1, column: 16 });
+});
+
+QUnit.test('replace except operator (plain2math)', function (assert) {
+	const orgQuery = `S  except   T`;
+	const orgCursor = { line: 1, column: 14 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `S  -   T`);
+	assert.deepEqual(cursor, { line: 1, column: 9 });
+});
+
+QUnit.test('replace except operator (math2plain)', function (assert) {
+	const orgQuery = `S   -  T`;
+	const orgCursor = { line: 1, column: 8 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `S   except  T`);
+	assert.deepEqual(cursor, { line: 1, column: 13 });
+});
+
+QUnit.test('replace division operator (plain2math)', function (assert) {
+	const orgQuery = `S  /   T`;
+	const orgCursor = { line: 1, column: 9 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `S  ÷   T`);
+	assert.deepEqual(cursor, { line: 1, column: 9 });
+});
+
+QUnit.test('replace division operator (math2plain)', function (assert) {
+	const orgQuery = `S   ÷  T`;
+	const orgCursor = { line: 1, column: 8 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `S   /  T`);
+	assert.deepEqual(cursor, { line: 1, column: 8 });
+});
+
+QUnit.test('replace natural join operator (plain2math)', function (assert) {
+	const orgQuery = `R  natural join S`;
+	const orgCursor = { line: 1, column: 16 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `R  ⨝ S`);
+	assert.deepEqual(cursor, { line: 1, column: 5 });
+});
+
+QUnit.test('replace natural join operator (math2plain)', function (assert) {
+	const orgQuery = `R ⨝  S`;
+	const orgCursor = { line: 1, column: 6 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `R natural join  S`);
+	assert.deepEqual(cursor, { line: 1, column: 17 });
+});
+
+QUnit.test('replace theta join operator (plain2math)', function (assert) {
+	const orgQuery = `R join  R.b = S.b S`;
+	const orgCursor = { line: 1, column: 13 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `R ⨝  R.b = S.b S`);
+	assert.deepEqual(cursor, { line: 1, column: 10 });
+});
+
+QUnit.test('replace theta join operator (math2plain)', function (assert) {
+	const orgQuery = `R  ⨝  R.b = S.b   S`;
+	const orgCursor = { line: 1, column: 9 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `R  inner join  R.b = S.b   S`);
+	assert.deepEqual(cursor, { line: 1, column: 18 });
+});
+
+QUnit.test('replace natural left outer join operator (plain2math)', function (assert) {
+	const orgQuery = `R  left outer join S`;
+	const orgCursor = { line: 1, column: 19 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `R  ⟕ S`);
+	assert.deepEqual(cursor, { line: 1, column: 5 });
+});
+
+QUnit.test('replace natural left outer join operator (math2plain)', function (assert) {
+	const orgQuery = `R  ⟕  S`;
+	const orgCursor = { line: 1, column: 6 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `R  left outer join  S`);
+	assert.deepEqual(cursor, { line: 1, column: 20 });
+});
+
+QUnit.test('replace theta left outer join operator (plain2math)', function (assert) {
+	const orgQuery = `R  left outer join  R.b =   S.b S`;
+	const orgCursor = { line: 1, column: 29 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `R  ⟕  R.b =   S.b S`);
+	assert.deepEqual(cursor, { line: 1, column: 15 });
+});
+
+QUnit.test('replace theta left outer join operator (math2plain)', function (assert) {
+	const orgQuery = `R ⟕  R.b  = S.b S`;
+	const orgCursor = { line: 1, column: 12 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `R left outer join  R.b  = S.b S`);
+	assert.deepEqual(cursor, { line: 1, column: 26 });
+});
+
+QUnit.test('replace natural right outer join operator (plain2math)', function (assert) {
+	const orgQuery = `R  right outer join S`;
+	const orgCursor = { line: 1, column: 21 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `R  ⟖ S`);
+	assert.deepEqual(cursor, { line: 1, column: 6 });
+});
+
+QUnit.test('replace natural right outer join operator (math2plain)', function (assert) {
+	const orgQuery = `R  ⟖  S`;
+	const orgCursor = { line: 1, column: 7 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `R  right outer join  S`);
+	assert.deepEqual(cursor, { line: 1, column: 22 });
+});
+
+QUnit.test('replace theta right outer join operator (plain2math)', function (assert) {
+	const orgQuery = `R  right outer join  R.b =   S.b S`;
+	const orgCursor = { line: 1, column: 29 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `R  ⟖  R.b =   S.b S`);
+	assert.deepEqual(cursor, { line: 1, column: 14 });
+});
+
+QUnit.test('replace theta right outer join operator (math2plain)', function (assert) {
+	const orgQuery = `R ⟖  R.b  = S.b S`;
+	const orgCursor = { line: 1, column: 12 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `R right outer join  R.b  = S.b S`);
+	assert.deepEqual(cursor, { line: 1, column: 27 });
+});
+
+QUnit.test('replace natural full outer join operator (plain2math)', function (assert) {
+	const orgQuery = `R  full outer join S`;
+	const orgCursor = { line: 1, column: 21 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `R  ⟗ S`);
+	assert.deepEqual(cursor, { line: 1, column: 7 });
+});
+
+QUnit.test('replace natural full outer join operator (math2plain)', function (assert) {
+	const orgQuery = `R  ⟗  S`;
+	const orgCursor = { line: 1, column: 7 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `R  full outer join  S`);
+	assert.deepEqual(cursor, { line: 1, column: 21 });
+});
+
+QUnit.test('replace theta full outer join operator (plain2math)', function (assert) {
+	const orgQuery = `R  full outer join  R.b =   S.b S`;
+	const orgCursor = { line: 1, column: 29 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `R  ⟗  R.b =   S.b S`);
+	assert.deepEqual(cursor, { line: 1, column: 15 });
+});
+
+QUnit.test('replace theta full outer join operator (math2plain)', function (assert) {
+	const orgQuery = `R ⟗  R.b  = S.b S`;
+	const orgCursor = { line: 1, column: 12 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `R full outer join  R.b  = S.b S`);
+	assert.deepEqual(cursor, { line: 1, column: 26 });
+});
+
+QUnit.test('replace natural left semi join operator (plain2math)', function (assert) {
+	const orgQuery = `R  left semi join S`;
+	const orgCursor = { line: 1, column: 19 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `R  ⋉ S`);
+	assert.deepEqual(cursor, { line: 1, column: 6 });
+});
+
+QUnit.test('replace natural left semi join operator (math2plain)', function (assert) {
+	const orgQuery = `R  ⋉  S`;
+	const orgCursor = { line: 1, column: 7 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `R  left semi join  S`);
+	assert.deepEqual(cursor, { line: 1, column: 20 });
+});
+
+QUnit.test('replace natural right semi join operator (plain2math)', function (assert) {
+	const orgQuery = `R  right semi join S`;
+	const orgCursor = { line: 1, column: 19 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `R  ⋊ S`);
+	assert.deepEqual(cursor, { line: 1, column: 5 });
+});
+
+QUnit.test('replace natural right semi join operator (math2plain)', function (assert) {
+	const orgQuery = `R  ⋊  S`;
+	const orgCursor = { line: 1, column: 7 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `R  right semi join  S`);
+	assert.deepEqual(cursor, { line: 1, column: 21 });
+});
+
+QUnit.test('replace natural anti join operator (plain2math)', function (assert) {
+	const orgQuery = `S  anti join R`;
+	const orgCursor = { line: 1, column: 14 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `S  ▷ R`);
+	assert.deepEqual(cursor, { line: 1, column: 6 });
+});
+
+QUnit.test('replace natural anti join operator (math2plain)', function (assert) {
+	const orgQuery = `S  ▷  R`;
+	const orgCursor = { line: 1, column: 7 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `S  anti join  R`);
+	assert.deepEqual(cursor, { line: 1, column: 15 });
+});
+
+QUnit.test('replace rename column operator (->)', function (assert) {
+	const orgQuery = `pi a->A (R)`;
+	const orgCursor = { line: 1, column: 7 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `π a→A (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 5 });
+});
+
+QUnit.test('replace rename column operator (→)', function (assert) {
+	const orgQuery = `π a→A (R)`;
+	const orgCursor = { line: 1, column: 6 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `pi a->A (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 8 });
+});
+
+QUnit.test('replace rename column operator (<-)', function (assert) {
+	const orgQuery = `pi A<-a (R)`;
+	const orgCursor = { line: 1, column: 5 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `π A←a (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 4 });
+});
+
+QUnit.test('replace rename column operator (←)', function (assert) {
+	const orgQuery = `π A←a (R)`;
+	const orgCursor = { line: 1, column: 5 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `pi A<-a (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 7 });
+});
+
+QUnit.test('replace logical operator (and)', function (assert) {
+	const orgQuery = `sigma a > 2 and a < 4 R`;
+	const orgCursor = { line: 1, column: 12 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `σ a > 2 ∧ a < 4 R`);
+	assert.deepEqual(cursor, { line: 1, column: 8 });
+});
+
+QUnit.test('replace logical operator (∧)', function (assert) {
+	const orgQuery = `σ a > 2 ∧ a < 4 R`;
+	const orgCursor = { line: 1, column: 10 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `sigma a > 2 and a < 4 R`);
+	assert.deepEqual(cursor, { line: 1, column: 16 });
+});
+
+QUnit.test('replace logical operator (or)', function (assert) {
+	const orgQuery = `sigma a > 2 or a < 4 R`;
+	const orgCursor = { line: 1, column: 9 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `σ a > 2 ∨ a < 4 R`);
+	assert.deepEqual(cursor, { line: 1, column: 5 });
+});
+
+QUnit.test('replace logical operator (∨)', function (assert) {
+	const orgQuery = `σ a > 2 ∨ a < 4 R`;
+	const orgCursor = { line: 1, column: 12 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `sigma a > 2 or a < 4 R`);
+	assert.deepEqual(cursor, { line: 1, column: 17 });
+});
+
+QUnit.test('replace logical operator (xor)', function (assert) {
+	const orgQuery = `sigma a > 2 xor a < 4 R`;
+	const orgCursor = { line: 1, column: 13 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `σ a > 2 ⊻ a < 4 R`);
+	assert.deepEqual(cursor, { line: 1, column: 9 });
+});
+
+QUnit.test('replace logical operator (⊻)', function (assert) {
+	const orgQuery = `σ a > 2 ⊻ a < 4 R`;
+	const orgCursor = { line: 1, column: 10 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `sigma a > 2 xor a < 4 R`);
+	assert.deepEqual(cursor, { line: 1, column: 16 });
+});
+
+QUnit.test('replace logical operator (!)', function (assert) {
+	const orgQuery = `sigma !(a > 3) R`;
+	const orgCursor = { line: 1, column: 15 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `σ ¬(a > 3) R`);
+	assert.deepEqual(cursor, { line: 1, column: 11 });
+});
+
+QUnit.test('replace logical operator (not)', function (assert) {
+	const orgQuery = `sigma not(a > 3) R`;
+	const orgCursor = { line: 1, column: 10 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `σ ¬(a > 3) R`);
+	assert.deepEqual(cursor, { line: 1, column: 4 });
+});
+
+QUnit.test('replace logical operator (¬)', function (assert) {
+	const orgQuery = `σ ¬(a > 3) R`;
+	const orgCursor = { line: 1, column: 7 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `sigma !(a > 3) R`);
+	assert.deepEqual(cursor, { line: 1, column: 11 });
+});
+
+QUnit.test('replace comparison operator (!=)', function (assert) {
+	const orgQuery = `sigma a != 5 (R)`;
+	const orgCursor = { line: 1, column: 11 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `σ a ≠ 5 (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 6 });
+});
+
+QUnit.test('replace comparison operator (<>)', function (assert) {
+	const orgQuery = `sigma a <> 5 (R)`;
+	const orgCursor = { line: 1, column: 11 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `σ a ≠ 5 (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 6 });
+});
+
+QUnit.test('replace comparison operator (≠)', function (assert) {
+	const orgQuery = `σ a ≠ 5 (R)`;
+	const orgCursor = { line: 1, column: 6 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `sigma a != 5 (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 11 });
+});
+
+QUnit.test('replace comparison operator (>=)', function (assert) {
+	const orgQuery = `sigma a >=3 (R)`;
+	const orgCursor = { line: 1, column: 12 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `σ a ≥3 (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 7 });
+});
+
+QUnit.test('replace comparison operator (≥)', function (assert) {
+	const orgQuery = `σ a ≥3 (R)`;
+	const orgCursor = { line: 1, column: 7 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `sigma a >=3 (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 12 });
+});
+
+QUnit.test('replace comparison operator (<=)', function (assert) {
+	const orgQuery = `sigma a<= 4 (R)`;
+	const orgCursor = { line: 1, column: 10 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'plain2math');
+	assert.equal(query, `σ a≤ 4 (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 5 });
+});
+
+QUnit.test('replace comparison operator (≥)', function (assert) {
+	const orgQuery = `σ a≤ 4 (R)`;
+	const orgCursor = { line: 1, column: 5 };
+	const ast = relalgjs.parseRelalg(orgQuery);
+
+	const { query, cursor } = relalgjs.queryWithReplacedOperatorsFromAst(orgQuery, ast.operatorPositions, orgCursor, 'math2plain');
+	assert.equal(query, `sigma a<= 4 (R)`);
+	assert.deepEqual(cursor, { line: 1, column: 10 });
+});

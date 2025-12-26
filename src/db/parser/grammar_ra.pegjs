@@ -22,8 +22,8 @@
 			text: text()
 		};
 	}
-
-	/** merges the codeInfo objects of a binary operation
+	
+	/** merges the codeInfo objects of a binary operation 
 	 * it is assumed that the right node follows the left one
 	 */
 	function mergeCodeInfo(left, right){
@@ -34,15 +34,15 @@
 			},
 			text: left.text + right.text,
 		};
-
+		
 		// start = min of both ends
 		if(left.location.end.offset <= right.location.start.offset === false){
 			console.error("mergeCodeInfo: nodes not next to each other (+- whitespace): ", left, right);
 		}
-
+		
 		return out;
 	}
-
+	
 	function getNodeInfo(nodeName){
 		return {
 			type: 'nodeInfo',
@@ -121,7 +121,7 @@
 			const groupHeader = groups[i].headers.find(g => g.name === 'group');
 			if(!groupHeader){
 				continue;
-
+				
 			}
 			const name = groupHeader.text;
 
@@ -297,15 +297,27 @@ rho
 
 arrowLeft
 = _ o:('←' { return getNodeInfo('arrowLeft'); }) _
-	{ return o; }
+	{
+		operatorPositions.push(o);
+		return o;
+	}
 / _ o:('<-' { return getNodeInfo('arrowLeft'); }) _
-	{ return o; }
+	{
+		operatorPositions.push(o);
+		return o;
+	}
 
 arrowRight
 = _ o:('→' { return getNodeInfo('arrowRight'); }) _
-	{ return o; }
+	{
+		operatorPositions.push(o);
+		return o;
+	}
 / _ o:('->' { return getNodeInfo('arrowRight'); }) _
-	{ return o; }
+	{ 
+		operatorPositions.push(o);
+		return o;
+	}
 
 psi
 = _ o:('ψ' { return getNodeInfo('psi'); }) _
@@ -410,9 +422,17 @@ fullOuterJoinOperator
 
 // arguments
 
+mu
+= _ o:('μ' { return getNodeInfo('recursive'); }) _
+	{ return o; }
+/ _ o:('mu'i { return getNodeInfo('recursive'); }) __
+	{ return o; }
+/ _ o:('recursive'i { return getNodeInfo('recursive'); }) __
+	{ return o; }
+
 // a recursive assignment: e.g. $x := expression union $x
 recursive_assignment
-= "recursive"i __ n:relationName !{ usedRelationNames.push(n); } assignmentOperator e:recursiveExpression
+= o:mu n:relationName !{ usedRelationNames.push(n); } assignmentOperator e:recursiveExpression
     {
         function containsInitialRelation(node, initialName) {
             if (!node) return false;
@@ -427,6 +447,8 @@ recursive_assignment
         if (!containsInitialRelation(e.child2, n)) {
             error('A parte recursiva deve referenciar a tabela inicial: ' + n);
         }
+
+        operatorPositions.push(o);
         return {
             type: 'recursiveAssignment',
             name: n,
@@ -451,8 +473,9 @@ assignment
 	}
 
 recursiveExpression
-= first:expression_precedence3 _ (u:unionOperator / 'union'i) _ second:expression_precedence3
+= first:expression_precedence3 o:unionOperator second:expression_precedence3
 	{
+		operatorPositions.push(o);
 		return {
 			type: 'recursiveExpression',
 			child: first,
@@ -700,7 +723,7 @@ groupRoot
 = _nc a:(_nc tableGroup)+ _nc
 	{
 		var groups = [];
-
+		
 		for(var i = 0; i < a.length; i++){
 			groups.push(a[i][1]);
 		}
@@ -718,7 +741,7 @@ tableGroupHeaders
 = a:tableGroupHeader b:(__? tableGroupHeader)* //toDo: checken, ob whitespace zwingend nötig oder nicht
 	{
 		var headers = [];
-
+		
 		headers.push(a);
 
 		b.map(function(e){
@@ -730,7 +753,7 @@ tableGroupHeaders
 		return headers;
 	}
 
-isoLanguageCode
+isoLanguageCode 
 = 'en'
 / 'de'
 / 'es'
@@ -744,14 +767,14 @@ exampleSql
  = a:('exampleSql' + ' - {') query:$[0-9 * a-z A-Z ( ) \n = . , ; - / \t]+ '}'
 {
 	return query;
-}
+}  
 
 
 exampleQueryRelAlg
  = ('exampleRelAlg' + ' - {') query:$[0-9 * a-z A-Z ( ) \n = . , ; - / \t]+ '}'
 {
 	return query;
-}
+}  
 
 tableGroupHeader
 = &([a-z@]+ ':') name:$[a-z]+ lang:('@' isoLanguageCode)? ':' text:$(!(endOfLine) .)*
@@ -764,7 +787,7 @@ tableGroupHeader
 	}
 / &([a-z@]+ '[[') name:$[a-z]+ lang:('@' isoLanguageCode)? '[[' text:$('\\]]' / (!(']]') .))* ']]'
 	{
-
+		
 
 		text = text.replace(/\\]]/g, ']]');
 		text = text.replace(/\\\\]]/g, '\\]]');
@@ -779,8 +802,8 @@ tableGroupHeader
 tableGroup
 = _ headers:tableGroupHeaders s:(__? exampleSql)* r:(__? exampleQueryRelAlg)* a:(__? assignment)+ //toDo: checken, ob whitespace zwingend nötig oder nicht
 	{
-
-
+	
+	
 		var assignments = [];
 		for(var i = 0; i < a.length; i++){
 			assignments.push(a[i][1]);
@@ -792,7 +815,7 @@ tableGroup
 			const header = headers[i];
 
 			if(
-				header.name !== 'group'
+				header.name !== 'group' 
 				&& header.name !== 'description'
 				&& header.name !== 'category'
 			){
@@ -824,7 +847,7 @@ tableGroup
 			}
 		}
 		exampleSql = exampleSql.trim();
-
+		
 		// check for exampleRelAlg
 		let exampleRelAlg = '';
 		if(r && r.length > 0) {
@@ -833,7 +856,7 @@ tableGroup
     	}
     }
 		exampleRelAlg = exampleRelAlg.trim();
-
+		
 
 		return {
 			type: 'tableGroup',
@@ -1135,48 +1158,80 @@ comparisonOperatorEquals
 = '='
 
 comparisonOperatorNotEquals
-= ('!=' / '≠' / '<>')
-	{ return '!='; }
+= _ co:('!=' { return getNodeInfo('notEquals'); }) _
+	{
+		operatorPositions.push(co);
+		return '!=';
+	}
+/ _ co:('≠' { return getNodeInfo('notEquals'); }) _
+	{
+		operatorPositions.push(co);
+		return '!=';
+	}
+/ _ co:('<>' { return getNodeInfo('notEquals'); }) _
+	{
+		operatorPositions.push(co);
+		return '!=';
+	}
 
 comparisonOperatorGreaterEquals
-= ('>=' / '≥')
-	{ return '>='; }
+= _ co:('>=' { return getNodeInfo('GreaterThanOrEquals'); }) _
+	{
+		operatorPositions.push(co);
+		return '>=';
+	}
+/ _ co:('≥' { return getNodeInfo('GreaterThanOrEquals'); })
+	{
+		operatorPositions.push(co);
+		return '>=';
+	}
 
 comparisonOperatorGreater
 = '>'
 
 comparisonOperatorLesserEquals
-= ('<=' / '≤')
-	{ return '<='; }
+= _ co:('<=' { return getNodeInfo('LessThanOrEquals'); }) _
+	{
+		operatorPositions.push(co);
+		return '<=';
+	}
+/ _ co:('≤' { return getNodeInfo('LessThanOrEquals'); }) _
+	{
+		operatorPositions.push(co);
+		return '<=';
+	}
 
 comparisonOperatorLesser
 = '<'
 
 and 'logical AND'
-= __ 'and'i __
-/ _ '∧' _
+= __ lo:('and'i { return getNodeInfo('and'); }) __
+	{ return lo; }
+/ _ lo:('∧' { return getNodeInfo('and'); }) _
+	{ return lo; }
 
 xor 'logical XOR'
-= __ 'xor'i __
-/ _ ('⊻' / '⊕') _
+= __ lo:('xor'i { return getNodeInfo('xor'); }) __
+	{ return lo; }
+/ _ lo:('⊻' { return getNodeInfo('xor'); }) _
+	{ return lo; }
 
 or 'logical OR'
-= __ 'or'i __
-/ _ '∨' _
+= __ lo:('or'i { return getNodeInfo('or'); }) __
+	{ return lo; }
+/ _ lo:('∨' { return getNodeInfo('or'); }) _
+	{ return lo; }
 
 not 'logical NOT'
-= _ ('!' / '¬') _
+= _ lo:('!' { return getNodeInfo('not'); }) _
+	{ return lo; }
+/ _ lo:('¬' { return getNodeInfo('not'); }) _
+	{ return lo; }
+/ _ lo:('not'i { return getNodeInfo('not'); }) _
+	{ return lo; }
 
 
-
-
-
-
-
-/* this is a syntax for a constant table
-
-
-*/
+/* this is a syntax for a constant table */
 
 tableDelimiter 'delimiter'
 = _sl ',' _sl
@@ -1420,8 +1475,9 @@ booleanExpr 'boolean expression'
 = valueExpr
 
 expr_rest_boolean_disj
-= or right:expr_precedence8
+= lo:or right:expr_precedence8
 	{
+		operatorPositions.push(lo);
 		return {
 			type: 'valueExpr',
 			datatype: 'boolean',
@@ -1446,8 +1502,9 @@ expr_rest_string_concat
 	}
 
 expr_rest_boolean_xdisj
-= xor right:expr_precedence7
+= lo:xor right:expr_precedence7
 	{
+		operatorPositions.push(lo);
 		return {
 			type: 'valueExpr',
 			datatype: 'boolean',
@@ -1459,8 +1516,9 @@ expr_rest_boolean_xdisj
 	}
 
 expr_rest_boolean_conj
-= and right:expr_precedence6
+= lo:and right:expr_precedence6
 	{
+		operatorPositions.push(lo);
 		return {
 			type: 'valueExpr',
 			datatype: 'boolean',
@@ -1471,8 +1529,17 @@ expr_rest_boolean_conj
 		};
 	}
 
-
-
+expr_rest_between
+= __ neg:('not'i __)? 'between'i __ lower:expr_precedence4 __ 'and'i __ upper:expr_precedence4
+	{
+		return {
+			type: 'valueExpr',
+			datatype: 'boolean',
+			func: neg ? 'notBetween' : 'between',
+			args: [undefined, lower, upper],
+			codeInfo: getCodeInfo()
+		};
+	}
 
 expr_rest_boolean_comparison
 = _ o:comparisonOperatorsIsOrIsNot _ right:valueExprConstantNull
@@ -1566,8 +1633,9 @@ expr_number_minus
 	}
 
 expr_boolean_negation
-= not a:expr_precedence0
+= lo:not a:expr_precedence0
 	{
+		operatorPositions.push(lo);
 		return {
 			type: 'valueExpr',
 			datatype: 'boolean',
@@ -1910,7 +1978,7 @@ expr_precedence6
 / expr_precedence5
 
 expr_precedence5
-= first:expr_precedence4 rest:( expr_rest_boolean_comparison )+
+= first:expr_precedence4 rest:( expr_rest_boolean_comparison / expr_rest_between )+
 	{ return buildBinaryValueExpr(first, rest); }
 / expr_precedence4
 
@@ -1971,6 +2039,8 @@ RESERVED_KEYWORD_RELALG
 / 'natural'i
 / 'semi'i
 / 'anti'i
+/ 'mu'i
+/ 'recursive'i
 / 'desc'i
 / 'asc'i
 / 'case'i

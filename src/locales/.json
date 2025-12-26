@@ -169,6 +169,8 @@
 	"calc.editors.ra.toolbar.anti-join-content": "",
 	"calc.editors.ra.toolbar.assignment": "",
 	"calc.editors.ra.toolbar.assignment-content": "",
+	"calc.editors.ra.toolbar.recursive-assignment": "",
+	"calc.editors.ra.toolbar.recursive-assignment-content": "",
 	"calc.editors.ra.toolbar.single-line-comment": "",
 	"calc.editors.ra.toolbar.single-line-comment-content": "",
 	"calc.editors.ra.toolbar.multi-line-comment": "",

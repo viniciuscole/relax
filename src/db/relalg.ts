@@ -50,10 +50,17 @@ export function queryWithReplacedOperatorsFromAst(
 			'psi': 'psi',
 			'tau': 'tau',
 			'gamma': 'gamma',
+			'and': 'and',
+			'xor': 'xor',
+			'or': 'or',
+			'not': '!',
+			'notEquals': '!=',
+			'LessThanOrEquals': '<=',
+			'GreaterThanOrEquals': '>=',
 			'unionOperator': 'union',
 			'intersectOperator': 'intersect',
 			'divisionOperator': '/',
-			'differenceOperator': '-',
+			'differenceOperator': 'except',
 			'crossJoinOperator': 'cross join',
 			'innerJoinOperator': 'inner join',
 			'naturalJoinOperator': 'natural join',
@@ -63,6 +70,7 @@ export function queryWithReplacedOperatorsFromAst(
 			'leftOuterJoinOperator': 'left outer join',
 			'rightOuterJoinOperator': 'right outer join',
 			'fullOuterJoinOperator': 'full outer join',
+			'recursive': 'recursive',
 		},
 		'plain2math': {
 			'delta': '∂',
@@ -74,6 +82,13 @@ export function queryWithReplacedOperatorsFromAst(
 			'psi': 'ψ',
 			'tau': 'τ',
 			'gamma': 'γ',
+			'and': '∧',
+			'xor': '⊻',
+			'or': '∨',
+			'not': '¬',
+			'notEquals': '≠',
+			'LessThanOrEquals': '≤',
+			'GreaterThanOrEquals': '≥',
 			'unionOperator': '∪',
 			'intersectOperator': '∩',
 			'divisionOperator': '÷',
@@ -87,12 +102,27 @@ export function queryWithReplacedOperatorsFromAst(
 			'leftOuterJoinOperator': '⟕',
 			'rightOuterJoinOperator': '⟖',
 			'fullOuterJoinOperator': '⟗',
+			'recursive': 'μ',
 		},
 	};
+
+	// sort operator positions by line and column (descending order)
+	// this is important because we need to replace the farthest operator first
+	operatorPositions.sort(
+		(a, b) =>
+			a.location.start.line > b.location.start.line ?
+				1 : 
+				(
+					a.location.start.line === b.location.start.line &&
+					a.location.start.column > b.location.start.column ?
+					1 : -1
+				)
+	);
+
 	for (let i = operatorPositions.length - 1; i >= 0; i--) {
 		const op = operatorPositions[i];
 		const location = op.location; // = location without surrounding whitespace
-		const left = query.substr(0, location.start.offset - 1); // fixed offset | #174
+		const left = query.substr(0, location.start.offset); // fixed offset | #174
 		const right = query.substring(location.end.offset);
 		const newOperator = (newOperators[mode] as any)[op.name]; // TODO: fix typings
 		const oldOperator = query.substring(location.start.offset, location.end.offset);
@@ -157,11 +187,9 @@ export function queryWithReplacedTRCOperatorsFromAst(
 			'⊻': 'xor',
 			'∨': 'or',
 			'¬': 'not',
-			'!': 'not',
 			'⇒': '=>',
 			'⇔': '<=>',
 			'≠': '!=',
-			'<>': '!=',
 			'≤': '<=',
 			'≥': '>=',
 			'∃': 'exists',

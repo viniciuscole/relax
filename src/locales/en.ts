@@ -227,6 +227,8 @@ export const langEN = {
 		<br /><b>Y = </b> pi b ( b )
 		<br />( X ) <span class=\"math\">&cup;</span> ( Y )<br /></div>
 	`,
+	'calc.editors.ra.toolbar.recursive-assignment': 'recursive relation',
+	'calc.editors.ra.toolbar.recursive-assignment-content': "<b class=\"math\">μ</b> t = S <span class=\"math\">&cup;</span> ( t <b>⨝</b> T )\n<br /><b>mu</b> t = S union ( t join T )\n<br /><b>recursive</b> t = S <span class=\"math\">&cup;</span> ( t ⨝ T )",
 	'calc.editors.ra.toolbar.single-line-comment': 'single-line comment',
 	'calc.editors.ra.toolbar.single-line-comment-content': '<span class="math">&pi;</span> a, b A <b>-- useful comment</b>',
 	'calc.editors.ra.toolbar.multi-line-comment': 'multi-line comment',

@@ -1408,3 +1408,53 @@ QUnit.test('test cast function', function (assert) {
 
 	assert.deepEqual(root.getResult(), ref.getResult());
 });
+
+QUnit.test('test selection using BETWEEN with numbers', function (assert) {
+	const root = exec_sql('select distinct * from S where d between 100 and 300');
+
+	const ref = relalgjs.executeRelalg(`{
+		S.b, S.d
+		a,   100
+		b,   300
+		d,   200
+		e,   150
+	}`);
+
+	assert.deepEqual(root.getResult(), ref.getResult());
+});
+
+QUnit.test('test selection using NOT BETWEEN with numbers', function (assert) {
+	const root = exec_sql('select distinct * from S where d not between 100 and 300');
+
+	const ref = relalgjs.executeRelalg(`{
+		S.b, S.d
+		c,   400
+	}`);
+
+	assert.deepEqual(root.getResult(), ref.getResult());
+});
+
+QUnit.test('test selection using BETWEEN with strings', function (assert) {
+	const root = exec_sql("select distinct * from S where b between 'b' and 'd'");
+
+	const ref = relalgjs.executeRelalg(`{
+		S.b, S.d
+		b,   300
+		c,   400
+		d,   200
+	}`);
+
+	assert.deepEqual(root.getResult(), ref.getResult());
+});
+
+QUnit.test('test selection using NOT BETWEEN with strings', function (assert) {
+	const root = exec_sql("select distinct * from S where b not between 'b' and 'd'");
+
+	const ref = relalgjs.executeRelalg(`{
+		S.b, S.d
+		a,   100
+		e,   150
+	}`);
+
+	assert.deepEqual(root.getResult(), ref.getResult());
+});

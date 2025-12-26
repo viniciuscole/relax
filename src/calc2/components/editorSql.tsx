@@ -22,7 +22,7 @@ const KEYWORDS_SQL = [
 	'distinct', 'select distinct', 'from', 'where', 'order by', 'asc', 'desc',
 	'inner join', 'inner', 'join', 'natural', 'union', 'intersect', 'outer join', 'natural join', 'left join', 'right join', 'left outer join',
 	'right outer join', 'full outer join', 'group by', 'having', 'limit', 'offset',
-	'and', 'or', 'xor', '||',
+	'and', 'or', 'xor', '||', 'not between', 'between',
 ];
 
 interface Props {
@@ -64,6 +64,9 @@ export class EditorSql extends React.Component<Props> {
 				mode="text/x-mysql"
 				// @ts-ignore
 				execFunction={(self: EditorBase, text: string, offset) => {
+					// add to history first
+					self.historyAddEntry(text);
+
 					const ast = parseSQLSelect(text);
 					replaceVariables(ast, relations);
 			
@@ -82,9 +85,6 @@ export class EditorSql extends React.Component<Props> {
 			
 					if (root) {
 						root.check();
-						
-
-						self.historyAddEntry(text);
 
 						// calc.displayRaResult(root);
 						return {

@@ -49,7 +49,7 @@ require('codemirror/mode/sql/sql.js');
 require('handsontable/dist/handsontable.full.css');
 
 CodeMirror.defineMode('trc', function () {
-	const keywords = ['in', 'and', 'or', 'xor', 'not', 'implies', 'iff', 'exists', 'for all'];
+	const keywords = ['in', 'and', 'or', 'xor', 'not', 'implies', 'iff', 'exists', 'for all', 'not between', 'between'];
 	const keywordsMath = ['∈', '∃', '∀'];
 	const operators = ['←', '→', '∧', '∨', '⊻', '¬', '⇒', '⇔', '=', '≠', '≤', '≥', '<', '>'];
 	const matchAny = (
@@ -171,9 +171,10 @@ CodeMirror.defineMode('relalg', function () {
 	const keywords = [
 		'pi', 'sigma', 'rho', 'tau', 'gamma', '<-', '->', 'intersect', 'union', 'except', '/', '-', '\\\\', 'x', 'cross join', 'join',
 		'inner join', 'natural join', 'left join', 'right join', 'left outer join', 'right outer join',
-		'left semi join', 'right semi join', 'anti join', 'anti semi join', 'and', 'or', 'xor',
+		'left semi join', 'right semi join', 'anti join', 'anti semi join', 'and', 'or', 'xor', 'not between', 'between',
+		'mu', 'recursive'
 	];
-	const keywordsMath = ['π', 'σ', 'ρ', 'τ', '←', '→', '∩', '∪', '÷', '-', '⨯', '⨝', '⟕', '⟖', '⟗', '⋉', '⋊', '▷', 'γ'];
+	const keywordsMath = ['π', 'σ', 'ρ', 'τ', '←', '→', '∩', '∪', '÷', '-', '⨯', '⨝', '⟕', '⟖', '⟗', '⋉', '⋊', '▷', 'γ', 'μ'];
 	const operators = ['<-', '->', '>=', '<=', '=', '∧', '∨', '⊻', '⊕', '≠', '=', '¬', '>', '<', '≥', '≤'];
 	const matchAny = (
 		stream: CodeMirror.StringStream,
@@ -280,9 +281,10 @@ CodeMirror.defineMode('bagalg', function () {
 	const keywords = [
 		'delta', 'pi', 'sigma', 'rho', 'tau', 'gamma', '<-', '->', 'intersect', 'union', 'except', '/', '-', '\\\\', 'x', 'cross join', 'join',
 		'inner join', 'natural join', 'left join', 'right join', 'left outer join', 'right outer join',
-		'left semi join', 'right semi join', 'anti join', 'anti semi join', 'and', 'or', 'xor',
+		'left semi join', 'right semi join', 'anti join', 'anti semi join', 'and', 'or', 'xor', 'not between', 'between',
+		'mu', 'recursive'
 	];
-	const keywordsMath = ['∂', 'π', 'σ', 'ρ', 'τ', '←', '→', '∩', '∪', '÷', '-', '⨯', '⨝', '⟕', '⟖', '⟗', '⋉', '⋊', '▷', 'γ'];
+	const keywordsMath = ['∂', 'π', 'σ', 'ρ', 'τ', '←', '→', '∩', '∪', '÷', '-', '⨯', '⨝', '⟕', '⟖', '⟗', '⋉', '⋊', '▷', 'γ', 'μ'];
 	const operators = ['<-', '->', '>=', '<=', '=', '∧', '∨', '⊻', '⊕', '≠', '=', '¬', '>', '<', '≥', '≤'];
 	const matchAny = (
 		stream: CodeMirror.StringStream,
@@ -1166,7 +1168,7 @@ export class EditorBase extends React.Component<Props, State> {
 			history: [
 				entry,
 				...this.state.history,
-			].slice(-historyMaxEntries),
+			].slice(0, historyMaxEntries),
 		});
 	}
 

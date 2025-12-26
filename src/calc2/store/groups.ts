@@ -17,11 +17,14 @@ export type State = {
 	current: {
 		group: Group,
 	} | null,
+	error?: string,
+	errorRequestId?: string, // track which request caused the error
 };
 
 export type Action = (
 	| GROUPS_LOAD_REQUEST
 	| GROUPS_LOAD_SUCCESS
+	| GROUPS_LOAD_ERROR
 	| GROUP_SET_CURRENT
 	| GROUP_SET_DRAFT
 );
@@ -31,6 +34,7 @@ export function* rootSaga() {
 
 	yield saga.takeEvery('GROUPS_LOAD_REQUEST', function* (action: GROUPS_LOAD_REQUEST) {
 		const { source, id, setCurrent, maintainer, maintainerGroup} = action;
+		const requestId = `${source}/${id}/${typeof setCurrent === 'object' ? setCurrent?.filename : ''}/${typeof setCurrent === 'object' ? setCurrent?.index : 0}`; // unique ID for this request
 
 		const state: store.State = yield saga.select();
 
@@ -105,7 +109,15 @@ export function* rootSaga() {
 			}
 			catch (e) {
 				console.error('could not fetch group', e);
-				window.alert('Could not fetch group!\nDefault group loaded.\n' + e);
+				// window.alert('Could not fetch group!\nDefault group loaded.\n' + e);
+
+				// dispatch an error to Redux
+				const errorMsg = e;
+				yield saga.put({
+					type: 'GROUPS_LOAD_ERROR',
+					error: errorMsg,
+					requestId: requestId,
+				});
 			}
 		}
 	});
@@ -175,6 +187,7 @@ export type GROUPS_LOAD_REQUEST = {
 		filename: string,
 		index: number,
 	},
+	requestId?: string,
 };
 
 type GROUPS_LOAD_SUCCESS = {
@@ -185,6 +198,7 @@ type GROUPS_LOAD_SUCCESS = {
 type GROUPS_LOAD_ERROR = {
 	type: 'GROUPS_LOAD_ERROR',
 	error: string,
+	requestId: string,
 };
 
 type GROUP_SET_CURRENT = {
@@ -245,27 +259,34 @@ export function loadStaticGroups() {
 		source: GroupSourceType,
 		id: string,
 	}[] = [
-		{
+			{
 				maintainerGroup: t('calc.maintainer-groups.misc'),
+				maintainer: '',
+
+				source: 'local',
+				id: 'misc',
+			},
+			{
+				maintainerGroup: t('calc.maintainer-groups.uibk'),
 				maintainer: '',
 
 				source: 'local',
 				id: 'uibk',
 			},
-			{
-				maintainerGroup: t('calc.maintainer-groups.uibk'),
-				maintainer: '<a href="https://github.com/mtschu">mtschu</a>',
-
-				source: 'gist',
-				id: '2923a30a474fdcb46bee',
-			},
-			{
-				maintainerGroup: t('calc.maintainer-groups.uibk'),
-				maintainer: '<a href="https://gist.github.com/woolfg">Wolfgang Gassler</a>',
-
-				source: 'gist',
-				id: '7d1871f79a8bcb4788de',
-			},
+			// {
+			// 	maintainerGroup: t('calc.maintainer-groups.uibk'),
+			// 	maintainer: '<a href="https://github.com/mtschu">mtschu</a>',
+			//
+			// 	source: 'gist',
+			// 	id: '2923a30a474fdcb46bee',
+			// },
+			// {
+			// 	maintainerGroup: t('calc.maintainer-groups.uibk'),
+			// 	maintainer: '<a href="https://gist.github.com/woolfg">Wolfgang Gassler</a>',
+			//
+			// 	source: 'gist',
+			// 	id: '7d1871f79a8bcb4788de',
+			// },
 			{
 				maintainerGroup: t('calc.maintainer-groups.karlsruhe'),
 				maintainer: '<a href="https://github.com/jstoess">Jan Stoess</a>',
@@ -409,6 +430,14 @@ export function reduce(oldState: State | undefined, action: store.Action): State
 				};
 			}
 			return newState;
+		}
+
+		case 'GROUPS_LOAD_ERROR': {
+			return {
+				...oldState,
+				error: action.error,
+				errorRequestId: action.requestId,
+			};
 		}
 
 		case 'GROUP_SET_DRAFT': {

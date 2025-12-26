@@ -14,12 +14,10 @@ declare namespace trcAst {
 	interface TRC_Expr {
 		type: 'TRC_Expr',
 		variables: string[],
-		projections: Projection[],
+		projections: relalgAst.projection,
 		formula: LogicalExpression,
 		codeInfo: CodeInfo
 	}
-
-	type Projection = (relalgAst.columnName | relalgAst.namedColumnExpr)[]
 
 	interface LogicalExpression {
 		type: 'LogicalExpression',

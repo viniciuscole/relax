@@ -109,173 +109,125 @@ export abstract class Join extends RANodeBinary {
 			this._joinConditionBooleanExpr.check(schemaA, schemaB);
 		}
 		catch (e) {
-			// Second try: check wether predicate uses a relation alias(es)
+			// Second try: check whether predicate uses relation alias(es)
 
 			// Get schemas
 			const schemas = [schemaA, schemaB];
-			// Get relation aliases
+
+			// Get relation aliases and split into variables arrays
 			const relAliases: string[] = [
 				this._child.getMetaData('fromVariable') ?? '',
 				this._child2.getMetaData('fromVariable') ?? ''
 			];
-			// Split relation aliases into array
-			const vars: string[][] = [
-				relAliases[0] ? relAliases[0].split(" ") : [],
-				relAliases[1] ? relAliases[1].split(" ") : []
-			];
+			const vars: string[][] = relAliases.map(v => v ? v.split(/\s+/) : []);
 
-			// All columns names and aliases
-			let allCols: (string | number)[][] = [];
-			let allRelAliases: (string | number)[][] = [];
-			let allAltRelAliases: (string | number)[][] = [];
-			// Ambiguous columns names
-			let blacklist: (string | number)[][] = [];
-			const numCols: number[] = [
-				schemaA.getSize(),
-				schemaB.getSize()
-			];
-			// Set first relation alias
-			let lastAlias: string[] = [
-				schemaA.getColumn(0).getRelAlias() ?? '',
-				schemaB.getColumn(0).getRelAlias() ?? ''
-			];
-			for (let i = 0; i < numCols.length; i++) {
-				allCols[i] = [];
-				allRelAliases[i] = [];
-				allAltRelAliases[i] = [];
-				blacklist[i] = [];
-				let l = 0;
-				for (let j = 0; j < numCols[i]; j++) {
-					if (schemas[i].getColumn(j).getRelAlias() !== lastAlias[i]) {
-						lastAlias[i] = schemas[i].getColumn(j).getRelAlias() as string;
-						if (l < vars[i].length - 1) l++;
+			// Precompute column meta for each schema to avoid repeated calls
+			type ColMeta = { name: string, relAlias: string, altAlias: string, idx: number };
+			const allColsMeta: ColMeta[][] = [[], []];
+			const numCols = [schemaA.getSize(), schemaB.getSize()];
+
+			for (let i = 0; i < 2; i++) {
+				const schema = schemas[i];
+				const n = numCols[i];
+				let varIndex = 0;
+				// get initial relAlias if any (safe fallback)
+				let lastRelAlias = n > 0 ? (schema.getColumn(0).getRelAlias() ?? '') : '';
+				for (let j = 0; j < n; j++) {
+					const col = schema.getColumn(j);
+					const name = String(col.getName());
+					const relAlias = String(col.getRelAlias() ?? '');
+					// advance alt alias index when relAlias changes (same logic as original)
+					if (relAlias !== lastRelAlias) {
+						lastRelAlias = relAlias;
+						if (varIndex < vars[i].length - 1) varIndex++;
 					}
+					const altAlias = vars[i][varIndex] ?? '';
+					allColsMeta[i].push({ name, relAlias, altAlias, idx: j });
+				}
+			}
 
-					allCols[i].push(schemas[i].getColumn(j).getName());
-					allRelAliases[i].push(schemas[i].getColumn(j).getRelAlias() as string);
-					allAltRelAliases[i].push(vars[i][l]);
+			// Build blacklist: names that appear more than once in same schema
+			const blacklist: Set<string>[] = [new Set(), new Set()];
+			for (let i = 0; i < 2; i++) {
+				const freq: Record<string, number> = Object.create(null);
+				for (const col of allColsMeta[i]) {
+					freq[col.name] = (freq[col.name] || 0) + 1;
+				}
+				for (const [name, cnt] of Object.entries(freq)) {
+					if (cnt > 1) blacklist[i].add(name);
+				}
+			}
 
-					// If column already in blacklist, skip it
-					// Cannot set relation alias for this column
-					if (blacklist[i].includes(schemas[i].getColumn(j).getName())) {
-						continue;
+			// Helper: iterate masks from 1 .. (1<<n)-1
+			const maxMasks = [
+				numCols[0] > 0 ? (1 << numCols[0]) : 0,
+				numCols[1] > 0 ? (1 << numCols[1]) : 0
+			];
+
+			let schemaWorked = false;
+
+			// Try every non-empty subset mask for schemaA
+			for (let maskA = 1; maskA < maxMasks[0] && !schemaWorked; maskA++) {
+				// copy schemaA once per mask
+				const newSchemaA = schemaA.copy();
+				let failedA = false;
+
+				// apply aliases for bits set in maskA
+				for (let b = 0; b < numCols[0]; b++) {
+					if ((maskA & (1 << b)) === 0) continue;
+					const meta = allColsMeta[0][b];
+					if (blacklist[0].has(meta.name)) { failedA = true; break; }
+
+					// Validate that the current relAlias matches expected (safety check)
+					const currentRelAlias = newSchemaA.getColumn(meta.idx).getRelAlias() ?? '';
+					if (currentRelAlias !== meta.relAlias) { failedA = true; break; }
+
+					try {
+						// set alt alias
+						newSchemaA.setRelAlias(String(meta.altAlias), meta.idx);
+					} catch (err) {
+						failedA = true;
+						break;
 					}
+				}
 
-					for (let k = j+1; k < numCols[i]; k++) {
-						// If found a sibling column, cannot set relation alias
-						if (schemas[i].getColumn(j).getName() === schemas[i].getColumn(k).getName()) {
-							blacklist[i].push(schemas[i].getColumn(j).getName());
+				if (failedA) continue;
+
+				// Try every non-empty subset mask for schemaB
+				for (let maskB = 1; maskB < maxMasks[1] && !schemaWorked; maskB++) {
+					const newSchemaB = schemaB.copy();
+					let failedB = false;
+
+					for (let b = 0; b < numCols[1]; b++) {
+						if ((maskB & (1 << b)) === 0) continue;
+						const meta = allColsMeta[1][b];
+						if (blacklist[1].has(meta.name)) { failedB = true; break; }
+
+						const currentRelAlias = newSchemaB.getColumn(meta.idx).getRelAlias() ?? '';
+						if (currentRelAlias !== meta.relAlias) { failedB = true; break; }
+
+						try {
+							newSchemaB.setRelAlias(String(meta.altAlias), meta.idx);
+						} catch (err) {
+							failedB = true;
 							break;
 						}
 					}
-				}
-			}
 
-			// Unique columns names
-			// let whitelist = [
-			// 	allCols[0].filter(x => !blacklist[0].includes(x)),
-			// 	allCols[1].filter(x => !blacklist[1].includes(x)),
-			// ];
-			
-			// Generate all column combinations
-			// https://stackoverflow.com/questions/43241174/javascript-generating-all-combinations-of-elements-in-a-single-array-in-pairs
-			let combCols: any[][] = [];
-			let combRelAliases: any[][] = [];
-			let combTempRelAliases: any[][] = [];
-			let temp: any[][] = [];
-			let tempAliases: any[][] = [];
-			let tempAltAliases: any[][] = [];
-			let slent = [
-				Math.pow(2, allCols[0].length),
-				Math.pow(2, allCols[1].length)
-			];
+					if (failedB) continue;
 
-			for (let i = 0; i < numCols.length; i++) {
-				combCols[i] = [];
-				combRelAliases[i] = [];
-				combTempRelAliases[i] = [];
-				for (let j = 0; j < slent[i]; j++) {
-					temp[i] = [];
-					tempAliases[i] = [];
-					tempAltAliases[i] = [];
-					for (var k = 0; k < allCols[i].length; k++) {
-						if ((j & Math.pow(2, k))) {
-							temp[i].push(allCols[i][k]);
-							tempAliases[i].push(allRelAliases[i][k]);
-							tempAltAliases[i].push(allAltRelAliases[i][k]);
-						}
-					}
-					if (temp[i].length > 0) {
-						combCols[i].push(temp[i]);
-						combRelAliases[i].push(tempAliases[i]);
-						combTempRelAliases[i].push(tempAltAliases[i]);
-					}
-				}
-			}
-
-			// Test if relation alias(es) works for any combination of columns
-			let schemaWorked = false;
-
-			// Apply and test if relation alias works for any combination of
-			// unique columns
-			for (let i1 = 0; i1 < combCols[0].length; i1++) {
-				let newSchemaA = schemaA.copy();
-
-				for (let j1 = 0; j1 < combCols[0][i1].length; j1++) {
-
-					for (let l1 = 0; l1 < numCols[0]; l1++) {
-						if (combCols[0][i1][j1] === newSchemaA.getColumn(l1).getName() &&
-							combRelAliases[0][i1][j1] === newSchemaA.getColumn(l1).getRelAlias() &&
-							!blacklist[0].includes(combCols[0][i1][j1])) {
-							// Set relation alias
-							try {
-								newSchemaA.setRelAlias(String(combTempRelAliases[0][i1][j1]), l1);
-							}
-							catch (e) {
-								// Test failed, try next combination
-								break;
-							}
-						}
-					}
-				}
-
-				for (let i2 = 0; i2 < combCols[1].length; i2++) {
-					let newSchemaB = schemaB.copy();
-
-					for (let j2 = 0; j2 < combCols[1][i2].length; j2++) {
-
-						for (let l2 = 0; l2 < numCols[1]; l2++) {
-							if (combCols[1][i2][j2] === newSchemaB.getColumn(l2).getName() &&
-								combRelAliases[1][i2][j2] === newSchemaB.getColumn(l2).getRelAlias() &&
-								!blacklist[1].includes(combCols[1][i2][j2])) {
-								// Set relation alias
-								try {
-									newSchemaB.setRelAlias(String(combTempRelAliases[1][i2][j2]), l2);
-								}
-								catch (e) {
-									// Test failed, try next combination
-									break;
-								}
-							}
-						}
-					}
-
-					// Check if combination of relation alias works
+					// Test the condition with the candidate schemas
 					try {
 						this._joinConditionBooleanExpr.check(newSchemaA, newSchemaB);
 						schemaWorked = true;
-						break;
-					}
-					catch (e) {
-						// Test failed, try next combination
+						break; // found a working combination
+					} catch (err) {
+						// test failed — try next maskB
 						continue;
 					}
 				}
-
-				if (schemaWorked) break;
 			}
 
-			// If no combination of relation alias works
 			if (!schemaWorked) {
 				this.throwExecutionError(e.message);
 			}

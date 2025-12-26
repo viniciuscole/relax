@@ -38,6 +38,8 @@ export class Calc extends React.Component<Props> {
 	private init: boolean;
 	private apiView: boolean = false;
 	private params: any = {};
+	private currentLoadGroupRequestId: string | null = null;
+	private loadGroupPending: boolean = false;
 	
 	constructor(props: Props) {
 		super(props);
@@ -58,6 +60,16 @@ export class Calc extends React.Component<Props> {
 	}
 
 	componentDidUpdate(prevProps: Props): void {
+		// Show alert only if error comes from our explicit loadGroup call
+		if (
+			this.loadGroupPending &&
+			this.props.groups.error &&
+			this.props.groups.errorRequestId === this.currentLoadGroupRequestId
+		) {
+			alert(this.props.groups.error);
+			this.loadGroupPending = false;
+		}
+
 		const { params } = this.props.match;
 		const { params: prevParams } = prevProps.match;
 		if (
@@ -74,8 +86,13 @@ export class Calc extends React.Component<Props> {
 	}
 
 	private loadGroup(props: Props) {
-		const { source, id, filename, index } = props.match.params;
+		const { source, id, filename = '', index = '0' } = props.match.params;
+		const requestId = `${source}/${id}/${filename}/${index}`;
 
+		// mark that we triggered a load explicitly
+		this.currentLoadGroupRequestId = requestId;
+		this.loadGroupPending = true;
+		
 		this.props.loadGroup(source, id, filename, Number.parseInt(index, 10), '', '');
 		// TODO: display errors
 	}

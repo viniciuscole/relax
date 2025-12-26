@@ -705,7 +705,7 @@ export class Help extends React.Component<Props> {
 									</div>
 
 									<p>An assignment (= definition of a variable) is no valid relational algebra expression on its own.
-										If you miss the acutal query a error is thrown (<i>Error: only assignments found; query is
+										If you miss the actual query a error is thrown (<i>Error: only assignments found; query is
 											missing</i>).
 									</p>
 
@@ -2022,6 +2022,17 @@ export class Help extends React.Component<Props> {
 									<td>compares two values of the same type</td>
 								</tr>
 								<tr>
+									<td>
+										<code>a BETWEEN b AND c</code>
+									</td>
+									<td>boolean</td>
+									<td>returns true if expression evaluating to a value <code>a</code> is between the 
+										values <code>b</code> and <code>c</code> (inclusive). Otherwise, returns false.
+										<br />The values <code>a</code>, <code>b</code> and <code>c</code> must be of
+										the same type (i.e., number, string, date).
+									</td>
+								</tr>
+								<tr>
 									<td><code>a:string LIKE 'PATTERN'</code></td>
 									<td>boolean</td>
 									<td>returns true if expression evaluating to a string <code>a</code> matches the pattern
@@ -2345,7 +2356,7 @@ export class Help extends React.Component<Props> {
 								</tr>
 								<tr>
 									<td>5</td>
-									<td>= (comparison), {'>'}=, {'>'}, {'<'}=, {'<'}, {'<'}{'>'}, !=, LIKE, ILIKE, REGEXP, RLIKE</td>
+									<td>= (comparison), {'>'}=, {'>'}, {'<'}=, {'<'}, {'<'}{'>'}, !=, LIKE, ILIKE, REGEXP, RLIKE, BETWEEN</td>
 								</tr>
 								<tr>
 									<td>6</td>

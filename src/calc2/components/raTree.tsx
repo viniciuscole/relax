@@ -130,8 +130,8 @@ export class RaTree extends React.Component<Props> {
 						{
 							n._execTime ? <p>{t('calc.result.exec.time')} {n._execTime}ms</p> : <p>{t('calc.result.exec.time')} - ms</p>
 						}
-
-
+						
+						
 					</div>
 				);
 			};
@@ -227,7 +227,7 @@ export class RaTree extends React.Component<Props> {
 							return;
 						}
 
-						const newScale =
+						const newScale = 
 							(containerElement.querySelector('.react-transform-wrapper') as HTMLElement).offsetWidth /
 							(containerElement.querySelector('.ra-tree') as HTMLElement).offsetWidth;
 
@@ -257,7 +257,7 @@ export class RaTree extends React.Component<Props> {
 				zoomAnimation={ { disabled: true } }
 				alignmentAnimation={ { disabled: true } }
 				velocityAnimation={ { disabled: true } }
-				onTransformed={(ref: ReactZoomPanPinchRef, state: {
+				onTransformed={(ref: ReactZoomPanPinchRef, state: { 
 					scale: number;
 					positionX: number;
 					positionY: number
@@ -276,7 +276,7 @@ export class RaTree extends React.Component<Props> {
 					if (containerElement) {
 						const controlElement = containerElement.querySelector('.pan-zoom-controls');
 						const zoom = parseFloat(state.scale.toString())*100;
-						const minScale =
+						const minScale = 
 							(containerElement.querySelector('.react-transform-wrapper') as HTMLElement).offsetWidth /
 							(containerElement.querySelector('.ra-tree') as HTMLElement).offsetWidth;
 
@@ -288,7 +288,7 @@ export class RaTree extends React.Component<Props> {
 								}
 								else (zoomIn as HTMLButtonElement).disabled = false;
 							}
-
+						
 							const zoomOut = controlElement.querySelector('.zoom-out');
 							if (zoomOut) {
 								if (zoom <= minScale*100) {

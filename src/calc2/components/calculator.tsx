@@ -260,7 +260,14 @@ example,  42
 					</div>
 				</div>
 
-				<Modal isOpen={this.state.datasetModal} toggle={this.toggleDatasetModal}>
+				<Modal
+					isOpen={this.state.datasetModal}
+					toggle={this.toggleDatasetModal}
+					onClosed={() => {
+						const editor: any = this.getCurrentEditor().current;
+						editor?.editorBase?.state?.editor?.refresh?.();
+					}}
+				>
 					<ModalHeader toggle={this.toggleDatasetModal}>{translateHeader(group.groupName, locale)}</ModalHeader>
 					<ModalBody>
 						<div>

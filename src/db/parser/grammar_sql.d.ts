@@ -25,7 +25,7 @@ declare namespace sqlAst {
 		| rootSql
 		| statement
 		| valueExpr
-
+		
 		;
 
 	type sqlClause

@@ -2506,7 +2506,7 @@ QUnit.test('test selection with explicit column(s) of relation', function (asser
 
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
-		4,   d,   f
+		4,   d,   f 
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -2520,7 +2520,7 @@ QUnit.test('test selection with implicit column(s) of relation', function (asser
 
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
-		4,   d,   f
+		4,   d,   f 
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -2535,7 +2535,7 @@ QUnit.test('test selection with implicit column(s) of relation from local variab
 
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
-		4,   d,   f
+		4,   d,   f 
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -2549,7 +2549,7 @@ QUnit.test('test selection with explicit column(s) of relation from local variab
 
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
-		4,   d,   f
+		4,   d,   f 
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -2563,7 +2563,7 @@ QUnit.test('test selection with explicit column(s) of local variable', function 
 
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
-		4,   d,   f
+		4,   d,   f 
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -3114,7 +3114,7 @@ QUnit.test('test rename implicit column of local variable', function (assert) {
 		R.aa, R.b, R.c
 		1,   a,   d
 		3,   c,   c
-		4,   d,   f
+		4,   d,   f 
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -3130,7 +3130,7 @@ QUnit.test('test rename explicit column of relation from local variable', functi
 		R.aa, R.b, R.c
 		1,   a,   d
 		3,   c,   c
-		4,   d,   f
+		4,   d,   f 
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -3146,7 +3146,7 @@ QUnit.test('test rename explicit column of local variable', function (assert) {
 		R.aa, R.b, R.c
 		1,   a,   d
 		3,   c,   c
-		4,   d,   f
+		4,   d,   f 
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -3154,7 +3154,7 @@ QUnit.test('test rename explicit column of local variable', function (assert) {
 	assert.deepEqual(root.getResult(), ref.getResult());
 });
 
-QUnit.test('test sqrt negative number', function (assert) {
+QUnit.test('test sqrt of negative number', function (assert) {
 	const query = "pi a, sqrt(-4)->k R";
 	const root = exec_ra(query, getTestRelations());
 
@@ -3255,16 +3255,16 @@ QUnit.test('test e raised to the power of 2', function (assert) {
 });
 
 QUnit.test('test column raised to the power of 0', function (assert) {
-	const query = "pi a, power(a, 1)->k R";
+	const query = "pi a, power(a, 0)->k R";
 	const root = exec_ra(query, getTestRelations());
 
 	const ref = exec_ra(`{
 		R.a, k:number
 		1,   1
-		3,   3
-		4,   4
-		5,   5
-		6,   6
+		3,   1
+		4,   1
+		5,   1
+		6,   1
 	}`, {});
 
 	assert.deepEqual(root.getResult(), ref.getResult());
@@ -3375,7 +3375,7 @@ QUnit.test('test logarithm, base 2, of -1', function (assert) {
 });
 
 QUnit.test('test logarithm, base 2, of 0', function (assert) {
-	const query = "pi log(2, -1)->k R";
+	const query = "pi log(2, 0)->k R";
 	const root = exec_ra(query, getTestRelations());
 
 	const ref = exec_ra(`{
@@ -3399,7 +3399,7 @@ QUnit.test('test logarithm, base 2, of 1', function (assert) {
 });
 
 QUnit.test('test logarithm, base -1, of 16', function (assert) {
-	const query = "pi log(2, -1)->k R";
+	const query = "pi log(-1, 16)->k R";
 	const root = exec_ra(query, getTestRelations());
 
 	const ref = exec_ra(`{
@@ -3411,7 +3411,7 @@ QUnit.test('test logarithm, base -1, of 16', function (assert) {
 });
 
 QUnit.test('test logarithm, base 0, of 16', function (assert) {
-	const query = "pi log(2, -1)->k R";
+	const query = "pi log(0, 16)->k R";
 	const root = exec_ra(query, getTestRelations());
 
 	const ref = exec_ra(`{
@@ -3601,6 +3601,60 @@ QUnit.test('test cast function', function (assert) {
 		'4',	100,	false,	2025-04-16
 		'5',	100,	false,	2025-04-16
 		'6',	100,	false,	2025-04-16
+	}`, {});
+
+	assert.deepEqual(root.getResult(), ref.getResult());
+});
+
+QUnit.test('test selection using BETWEEN with numbers', function (assert) {
+	const query = "sigma a between 3 and 5 (R)";
+	const root = exec_ra(query, getTestRelations());
+
+	const ref = exec_ra(`{
+		R.a, R.b, R.c
+		3,   c,   c
+		4,   d,   f 
+		5,   d,   b
+	}`, {});
+
+	assert.deepEqual(root.getResult(), ref.getResult());
+});
+
+QUnit.test('test selection using NOT BETWEEN with numbers', function (assert) {
+	const query = "sigma a not between 3 and 5 (R)";
+	const root = exec_ra(query, getTestRelations());
+	
+	const ref = exec_ra(`{
+		R.a, R.b, R.c
+		1,   a,   d
+		6,   e,   f
+	}`, {});
+	
+	assert.deepEqual(root.getResult(), ref.getResult());
+});
+
+QUnit.test('test selection using BETWEEN with strings', function (assert) {
+	const query = "sigma b between 'c' and 'd' (R)";
+	const root = exec_ra(query, getTestRelations());
+	
+	const ref = exec_ra(`{
+		R.a, R.b, R.c
+		3,   c,   c
+		4,   d,   f 
+		5,   d,   b
+	}`, {});
+
+	assert.deepEqual(root.getResult(), ref.getResult());
+});
+
+QUnit.test('test selection using NOT BETWEEN with strings', function (assert) {
+	const query = "sigma b not between 'c' and 'd' (R)";
+	const root = exec_ra(query, getTestRelations());
+	
+	const ref = exec_ra(`{
+		R.a, R.b, R.c
+		1,   a,   d
+		6,   e,   f
 	}`, {});
 
 	assert.deepEqual(root.getResult(), ref.getResult());

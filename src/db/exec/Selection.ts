@@ -61,118 +61,113 @@ export class Selection extends RANodeUnary {
 		try {
 			this._condition.check(this._schema);
 		} catch (e) {
-			// Second try: check wether predicate uses a relation alias(es)
+			// Second try: check whether predicate uses a relation alias(es)
 
-			// Get relation aliases
+			// Get relation aliases (space-separated) and split into alt names
 			const relAliases = this._child.getMetaData('fromVariable');
-			// Split relation aliases into array
-			const vars = relAliases ? relAliases.split(" ") : [];
+			const vars = relAliases ? String(relAliases).split(' ') : [];
 
-			// All columns names and aliases
-			let allCols: (string | number)[] = [];
-			let allRelAliases: (string | number)[] = [];
-			let allAltRelAliases: (string | number)[] = [];
-			// Ambiguous columns names
-			let blacklist: (string | number)[] = [];
+			// Collect column metadata and detect ambiguous names
+			const allCols: string[] = [];
+			const allRelAliases: string[] = [];
+			const allAltRelAliases: string[] = [];
+			const blacklist = new Set<string>();
 			const numCols = this._schema.getSize();
-			// Set first relation alias
+
+			if (numCols === 0) {
+				// Nothing to try
+				this.throwExecutionError(e.message);
+			}
+
+			// Track which alt var applies to each column (vars list maps by groups)
 			let lastAlias = this._schema.getColumn(0).getRelAlias();
-			let k = 0;
+			let altIdx = 0;
 			for (let i = 0; i < numCols; i++) {
-				if (this._schema.getColumn(i).getRelAlias() !== lastAlias) {
-					lastAlias = this._schema.getColumn(i).getRelAlias();
-					if (k < vars.length - 1) k++;
+				const col = this._schema.getColumn(i);
+				if (col.getRelAlias() !== lastAlias) {
+					lastAlias = col.getRelAlias();
+					if (altIdx < vars.length - 1) altIdx++;
 				}
+				const name = String(col.getName());
+				allCols.push(name);
+				allRelAliases.push(col.getRelAlias() as string);
+				allAltRelAliases.push(vars[altIdx] || '');
+			}
 
-				allCols.push(this._schema.getColumn(i).getName());
-				allRelAliases.push(this._schema.getColumn(i).getRelAlias() as string);
-				allAltRelAliases.push(vars[k]);
-
-				// If column already in blacklist, skip it
-				// Cannot set relation alias for this column
-				if (blacklist.includes(this._schema.getColumn(i).getName())) {
-					continue;
-				}
-
-				for (let j = i+1; j < numCols; j++) {
-					// If found a sibling column, cannot set relation alias
-					if (this._schema.getColumn(i).getName() === this._schema.getColumn(j).getName()) {
-						blacklist.push(this._schema.getColumn(i).getName());
+			// mark ambiguous names (duplicates) so we won't try to re-alias them
+			for (let a = 0; a < allCols.length; a++) {
+				for (let b = a + 1; b < allCols.length; b++) {
+					if (allCols[a] === allCols[b]) {
+						blacklist.add(allCols[a]);
 						break;
 					}
 				}
 			}
 
-			// Unique columns names
-			// let whitelist = allCols.filter(x => !blacklist.includes(x));
-			
-			// Generate all column combinations
-			// https://stackoverflow.com/questions/43241174/javascript-generating-all-combinations-of-elements-in-a-single-array-in-pairs
-			let combCols = [];
-			let combRelAliases = [];
-			let combTempRelAliases = [];
-			let temp = [];
-			let tempAliases = [];
-			let tempAltAliases = [];
-			let slent = Math.pow(2, allCols.length);
-
-			for (let i = 0; i < slent; i++) {
-				temp = [];
-				tempAliases = [];
-				tempAltAliases = [];
-				for (var j = 0; j < allCols.length; j++) {
-					if ((i & Math.pow(2, j))) {
-						temp.push(allCols[j]);
-						tempAliases.push(allRelAliases[j]);
-						tempAltAliases.push(allAltRelAliases[j]);
-					}
-				}
-				if (temp.length > 0) {
-					combCols.push(temp);
-					combRelAliases.push(tempAliases);
-					combTempRelAliases.push(tempAltAliases);
+			// Candidate columns: non-ambiguous and where relAlias differs from alt
+			const candidates: number[] = [];
+			for (let i = 0; i < allCols.length; i++) {
+				if (!blacklist.has(allCols[i]) && allRelAliases[i] !== allAltRelAliases[i]) {
+					candidates.push(i);
 				}
 			}
 
-			// Test if relation alias(es) works for any combination of columns
+			if (candidates.length === 0) {
+				// nothing to try
+				this.throwExecutionError(e.message);
+			}
+
+			const m = candidates.length;
+			const totalCombinations = (1 << m) - 1; // exclude empty set
+			const MAX_COMBINATIONS = 1000000; // safe cap
+			const MAX_TIME_MS = 3000; // timeout for this search
+			if (totalCombinations > MAX_COMBINATIONS) {
+				this.throwExecutionError(`Aborted: too many alias combinations (${totalCombinations})`);
+			}
+
 			let schemaWorked = false;
+			const start = Date.now();
+			let tried = 0;
+			const logEvery = 1000;
 
-			// Apply and test if relation alias works for any combination of
-			// unique columns
-			for (let i = 0; i < combCols.length; i++) {
-				let newSchema = this._schema.copy();
-
-				for (let j = 0; j < combCols[i].length; j++) {
-
-					for (let k = 0; k < numCols; k++) {
-						if (combCols[i][j] === newSchema.getColumn(k).getName() &&
-							combRelAliases[i][j] === newSchema.getColumn(k).getRelAlias() &&
-							!blacklist.includes(combCols[i][j])) {
-							// Set relation alias
-							try {
-								newSchema.setRelAlias(String(combTempRelAliases[i][j]), k);
-							}
-							catch (e) {
-								// Test failed, try next combination
-								break;
-							}
-						}
+			const subsets = 1 << m;
+			for (let mask = 1; mask < subsets; mask++) {
+				// Abort on timeout
+				if ((++tried % logEvery) === 0) {
+					const elapsed = Date.now() - start;
+					console.log(`[Selection alias retry] tried ${tried}/${totalCombinations} combos in ${elapsed}ms`);
+					if (elapsed > MAX_TIME_MS) {
+						this.throwExecutionError('Aborted: alias combination search timed out');
 					}
 				}
 
-				// Check if combination of relation alias works
+				// Copy schema only once per mask
+				let newSchema = this._schema.copy();
+				let failed = false;
+
+				for (let bit = 0; bit < m; bit++) {
+					if ((mask & (1 << bit)) === 0) continue;
+					const colPos = candidates[bit];
+					try {
+						newSchema.setRelAlias(String(allAltRelAliases[colPos]), colPos);
+					}
+					catch (err) {
+						failed = true;
+						break;
+					}
+				}
+				if (failed) continue;
+
 				try {
 					this._condition.check(newSchema);
 					schemaWorked = true;
 					break;
 				}
-				catch (e) {
-					// Test failed, try next combination
-					continue;
+				catch (err) {
+					// not working, try next
 				}
 			}
 
-			// If no combination of relation alias works
 			if (!schemaWorked) {
 				this.throwExecutionError(e.message);
 			}

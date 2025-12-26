@@ -11,7 +11,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { IconProp } from "@fortawesome/fontawesome-svg-core";
 
 const NUM_TREE_LABEL_COLORS = 6;
-const KEYWORDS_TRC = ['in', 'and', 'or', 'xor', 'not', 'implies', 'iff', 'exists', 'for all'];
+const KEYWORDS_TRC = ['in', 'and', 'or', 'xor', 'not', 'implies', 'iff', 'exists', 'for all', 'not between', 'between'];
 
 interface Props {
 	group: Group,
@@ -58,6 +58,7 @@ export class EditorTrc extends React.Component<Props, State> {
 				mode="trc"
 				// @ts-ignore
 				execFunction={(self: EditorBase, text: string, offset) => {
+					// add to history first
 					self.historyAddEntry(text);
 
 					const ast = parseTRCSelect(text);

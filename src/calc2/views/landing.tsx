@@ -414,6 +414,14 @@ export class Landing extends React.Component {
 
 						<h2 id="changelog">Changelog</h2>
 						<ul>
+							<li>v0.34 – Released 05.08.2025
+								<ul>
+									<li>Bug fix and enhancements to the TRC implementation (#253)</li>
+									<li>Fix unit tests (RA and Bags) (#252)</li>
+									<li>Code cleanup: remove repeated function names (#251)</li>
+									<li>Update Ufes dataset (#250)</li>
+								</ul>
+							</li>
 							<li>v0.33 – Released 17.04.2025
 								<ul>
 									<li>Added Tuple Relational Calculus (TRC) support | #232</li>

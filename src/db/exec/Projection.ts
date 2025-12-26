@@ -74,7 +74,10 @@ export class Projection extends RANodeUnary {
 			resRow = new Array(numCols);
 			for (j = 0; j < numCols; j++) {
 				if (_indices[j] === -1) {
-					resRow[j] = (this._columns[j] as ProjectionColumnExpr).child.evaluate(orgRow, [], i, session);
+					if (this._columns[j] instanceof Column)
+						resRow[j] = orgRow[j];
+					else
+						resRow[j] = (this._columns[j] as ProjectionColumnExpr).child.evaluate(orgRow, [], i, session);
 				}
 				else {
 					resRow[j] = orgRow[_indices[j]];
@@ -148,111 +151,138 @@ export class Projection extends RANodeUnary {
 					element.child.check(unProjectedSchema);
 				}
 				catch (e) {
-					// Second try: check wether projections use relation alias(es)
+					// Second try: check whether projections use relation alias(es)
 
-					// All columns names and aliases
-					let allCols: (string | number)[] = [];
-					let allRelAliases: (string | number)[] = [];
-					let allAltRelAliases: (string | number)[] = [];
-					// Ambiguous columns names
-					let blacklist: (string | number)[] = [];
+					// Collect column metadata and mark ambiguous columns (blacklist)
+					const allCols: string[] = [];
+					const allRelAliases: string[] = [];
+					const allAltRelAliases: string[] = [];
+					const blacklist: Set<string> = new Set();
 					const numCols = unProjectedSchema.getSize();
-					// Set first relation alias
 					let lastAlias = unProjectedSchema.getColumn(0).getRelAlias();
-					let k = 0;
-					for (let i = 0; i < numCols; i++) {
-						if (unProjectedSchema.getColumn(i).getRelAlias() !== lastAlias) {
-							lastAlias = unProjectedSchema.getColumn(i).getRelAlias();
-							if (k < vars.length - 1) k++;
+					let altIdx = 0;
+					for (let colIdx = 0; colIdx < numCols; colIdx++) {
+						const col = unProjectedSchema.getColumn(colIdx);
+						if (col.getRelAlias() !== lastAlias) {
+							lastAlias = col.getRelAlias();
+							if (altIdx < vars.length - 1) altIdx++;
 						}
 
-						allCols.push(unProjectedSchema.getColumn(i).getName());
-						allRelAliases.push(unProjectedSchema.getColumn(i).getRelAlias() as string);
-						allAltRelAliases.push(vars[k]);
+						const name = col.getName() + '';
+						allCols.push(name);
+						allRelAliases.push(col.getRelAlias() as string);
+						allAltRelAliases.push(vars[altIdx] || '');
 
-						// If column already in blacklist, skip it
-						// Cannot set relation alias for this column
-						if (blacklist.includes(unProjectedSchema.getColumn(i).getName())) {
-							continue;
-						}
-
-						for (let j = i+1; j < numCols; j++) {
-							// If found a sibling column, cannot set relation alias
-							if (unProjectedSchema.getColumn(i).getName() === unProjectedSchema.getColumn(j).getName()) {
-								blacklist.push(unProjectedSchema.getColumn(i).getName());
+						// mark ambiguous names
+						for (let j = colIdx + 1; j < numCols; j++) {
+							if (unProjectedSchema.getColumn(j).getName() === name) {
+								blacklist.add(name);
 								break;
 							}
 						}
 					}
 
-					// Unique columns names
-					// let whitelist = allCols.filter(x => !blacklist.includes(x));
-					
-					// Generate all column combinations
-					// https://stackoverflow.com/questions/43241174/javascript-generating-all-combinations-of-elements-in-a-single-array-in-pairs
-					let combCols = [];
-					let combRelAliases = [];
-					let combTempRelAliases = [];
-					let temp = [];
-					let tempAliases = [];
-					let tempAltAliases = [];
-					let slent = Math.pow(2, allCols.length);
-
-					for (let i = 0; i < slent; i++) {
-						temp = [];
-						tempAliases = [];
-						tempAltAliases = [];
-						for (var j = 0; j < allCols.length; j++) {
-							if ((i & Math.pow(2, j))) {
-								temp.push(allCols[j]);
-								tempAliases.push(allRelAliases[j]);
-								tempAltAliases.push(allAltRelAliases[j]);
-							}
-						}
-						if (temp.length > 0) {
-							combCols.push(temp);
-							combRelAliases.push(tempAliases);
-							combTempRelAliases.push(tempAltAliases);
+					// Candidate indices to try changing alias: not blacklisted and alt alias differs
+					const candidateIndices: number[] = [];
+					for (let idx = 0; idx < allCols.length; idx++) {
+						if (!blacklist.has(allCols[idx]) && allRelAliases[idx] !== allAltRelAliases[idx]) {
+							candidateIndices.push(idx);
 						}
 					}
 
-					// Test if relation alias(es) works for any combination of columns
-					let schemaWorked = false;
-					
-					for (let i = 0; i < combCols.length; i++) {
-						let newSchema = unProjectedSchema.copy();
+					const MAX_COMBINATIONS = 1_000_000;
+					const m = candidateIndices.length;
+					if (m === 0) {
+						// Nothing to try
+						this.throwExecutionError(e.message);
+					}
 
-						for (let j = 0; j < combCols[i].length; j++) {
-
-							for (let k = 0; k < numCols; k++) {
-								if (combCols[i][j] === newSchema.getColumn(k).getName() &&
-									combRelAliases[i][j] === newSchema.getColumn(k).getRelAlias() &&
-									!blacklist.includes(combCols[i][j])) {
-									// Set relation alias
-									try {
-										newSchema.setRelAlias(String(combTempRelAliases[i][j]), k);
-									}
-									catch (e) {
-										// Test failed, try next combination
-										break;
-									}
+					const totalCombinations = Math.pow(2, m) - 1; // non-empty subsets
+					if (totalCombinations > MAX_COMBINATIONS) {
+						console.warn(`Check aborted: too many alias combinations in projection (${totalCombinations})`);
+						// Build projected schema from the projection columns themselves
+						const tempIndices: number[] = [];
+						const projectedSchema = new Schema();
+						for (let pi = 0; pi < this._columns.length; pi++) {
+							const p = this._columns[pi];
+							if (p instanceof Column) {
+								const col = p as Column;
+								const name = col.getName();
+								const relAlias = col.getRelAlias();
+								let index = -1;
+								try {
+									index = unProjectedSchema.getColumnIndex(name, relAlias as any);
 								}
+								catch (ex) {
+									index = -1;
+								}
+
+								if (index !== -1) {
+									const type = unProjectedSchema.getType(index);
+									projectedSchema.addColumn(name, relAlias as any, type);
+								}
+								else {
+									projectedSchema.addColumn(name, relAlias as any, 'string');
+								}
+
+								tempIndices.push(index);
+							}
+							else {
+								const expr = p as ProjectionColumnExpr;
+								const dtype = expr.child.getDataType();
+								const dataType = (dtype === 'null' || dtype === null) ? 'string' : dtype as any;
+								projectedSchema.addColumn(expr.name, expr.relAlias, dataType);
+								tempIndices.push(-1);
 							}
 						}
 
-						// Check if combination of relation alias works
+						this._checked = {
+							_indices: tempIndices,
+							_projectedSchema: projectedSchema,
+						};
+						return;
+					}
+
+					// Try subsets of candidate indices (non-empty)
+					let schemaWorked = false;
+					const startTime = Date.now();
+					let tried = 0;
+					const limitLogEvery = 1000;
+
+					const subsets = (1 << m);
+					for (let mask = 1; mask < subsets; mask++) {
+						tried++;
+						// periodic logging
+						if ((tried % limitLogEvery) === 0) {
+							const elapsed = Date.now() - startTime;
+							console.log(`[Projection alias retry] tried ${tried}/${totalCombinations} combinations in ${elapsed}ms`);
+						}
+
+						const newSchema = unProjectedSchema.copy();
+						let failedSetting = false;
+						for (let bit = 0; bit < m; bit++) {
+							if ((mask & (1 << bit)) === 0) continue;
+							const colPos = candidateIndices[bit];
+							try {
+								newSchema.setRelAlias(String(allAltRelAliases[colPos]), colPos);
+							}
+							catch (ex) {
+								failedSetting = true;
+								break;
+							}
+						}
+						if (failedSetting) continue;
+
 						try {
 							element.child.check(newSchema);
 							schemaWorked = true;
 							break;
 						}
-						catch (e) {
-							// Test failed, try next combination
+						catch (ex) {
 							continue;
 						}
 					}
 
-					// If no combination of relation alias works
 					if (!schemaWorked) {
 						this.throwExecutionError(e.message);
 					}
@@ -353,11 +383,17 @@ export class Projection extends RANodeUnary {
 			const index = _indices[i];
 
 			if (index === -1) {
-				const col = this._columns[i] as ProjectionColumnExpr;
+				if (this._columns[i] instanceof Column) {
+					const col = this._columns[i] as Column;
+					projectedSchema.addColumn(col.getName(), col.getRelAlias(), col.getType());
+				}
+				else {
+					const col = this._columns[i] as ProjectionColumnExpr;
 
-				// dataType 'null' (unknown) has been checked before
-				const dataType = col.child.getDataType() as 'string' | 'number' | 'boolean' | 'date';
-				projectedSchema.addColumn(col.name, col.relAlias, dataType);
+					// dataType 'null' (unknown) has been checked before
+					const dataType = col.child.getDataType() as 'string' | 'number' | 'boolean' | 'date';
+					projectedSchema.addColumn(col.name, col.relAlias, dataType);
+				}
 			}
 			else {
 				const col = unProjectedSchema.getColumn(index);

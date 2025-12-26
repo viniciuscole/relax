@@ -414,11 +414,6 @@ declare module bagsAst {
 		| '<='
 		| '>'
 		| '<'
-		| "regexp"
-		| "rlike"
-		| "repeat"
-		| "replace"
-		| "reverse"
 		| "substring"
 		| "cast"
 	);
