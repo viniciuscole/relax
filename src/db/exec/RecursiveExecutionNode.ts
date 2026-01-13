@@ -5,11 +5,13 @@ import { Table } from './Table';
 export class RecursiveExecutionNode extends RANodeBinary  {
     private _step: Table;
     private _next: Table;
+    private _stepQueryFormulaHtml: string | null;
 
-    constructor(name: string, accNode: RANode, stepNode: RANode, next: Table, step: Table) {
-        super('union', accNode, stepNode);
+    constructor(name: string, accNode: RANode, stepNode: RANode, next: Table, step: Table, stepQueryFormulaHtml?: string) {
+        super('∪', accNode, stepNode);
         this._step = step
         this._next = next;
+        this._stepQueryFormulaHtml = stepQueryFormulaHtml ?? null;
         this.setResultNumRows(next.getNumRows());
     }
 
@@ -21,8 +23,12 @@ export class RecursiveExecutionNode extends RANodeBinary  {
         return this._step;
     }
 
+    getStepQueryFormulaHtml(): string | null {
+        return this._stepQueryFormulaHtml;
+    }
+
     getArgumentHtml(): string {
-        return `${this._functionName}`;
+        return '';
     }
 
     getSchema(): Schema {

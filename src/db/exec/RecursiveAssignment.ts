@@ -3,6 +3,7 @@ import { Table } from './Table';
 import { RecursiveRef } from './RecursiveRef';
 import { Schema } from './Schema';
 import { RecursiveExecutionNode } from './RecursiveExecutionNode';
+import { i18n } from 'calc2/i18n';
 
 export class RecursiveAssignment extends RANodeBinary {
     private _name: string;
@@ -21,7 +22,13 @@ export class RecursiveAssignment extends RANodeBinary {
 
     private _schemasUnionCompatible(a: Schema, b: Schema): { ok: boolean; reason?: string } {
         if (a.getSize() !== b.getSize()) {
-          return { ok: false, reason: `número de colunas difere (${a.getSize()} vs ${b.getSize()})` };
+          return {
+            ok: false,
+            reason: i18n.t('db.messages.exec.recursive.union-col-count-diff', {
+                a: a.getSize(),
+                b: b.getSize(),
+            }),
+          };
         }
         for (let i = 0; i < a.getSize(); i++) {
           const ca = a.getColumn(i);
@@ -30,10 +37,24 @@ export class RecursiveAssignment extends RANodeBinary {
           const tb = b.getType(i);
 
           if (ca.getName() !== cb.getName()) {
-            return { ok: false, reason: `coluna ${i + 1} tem nomes diferentes (${ca.getName()} vs ${cb.getName()})` };
+            return {
+                ok: false,
+                reason: i18n.t('db.messages.exec.recursive.union-col-name-diff', {
+                    index: i + 1,
+                    a: String(ca.getName()),
+                    b: String(cb.getName()),
+                }),
+            };
           }
           if (ta !== tb) {
-            return { ok: false, reason: `coluna ${i + 1} tem tipos diferentes (${ta} vs ${tb})` };
+            return {
+                ok: false,
+                reason: i18n.t('db.messages.exec.recursive.union-col-type-diff', {
+                    index: i + 1,
+                    a: ta,
+                    b: tb,
+                }),
+            };
           }
         }
         return { ok: true };
@@ -82,7 +103,10 @@ export class RecursiveAssignment extends RANodeBinary {
         // 4) checa compatibilidade para união
         const compat = this._schemasUnionCompatible(initialSchema, recursiveSchema);
         if (!compat.ok) {
-            this.throwExecutionError(`recursive ${this._name}: seed e passo recursivo não são compatíveis para union: ${compat.reason}`);
+			this.throwExecutionError(i18n.t('db.messages.exec.recursive.seed-step-not-union-compatible', {
+				name: this._name,
+				reason: compat.reason ?? '',
+			}));
         }
     }
 
@@ -116,7 +140,10 @@ export class RecursiveAssignment extends RANodeBinary {
             // Safety Guard
             const compat = this._schemasUnionCompatible(acc.getSchema(), step.getSchema());
             if (!compat.ok) {
-                this.throwExecutionError(`recursive ${this._name}: union incompatível em execução: ${compat.reason}`);
+				this.throwExecutionError(i18n.t('db.messages.exec.recursive.union-incompatible-at-runtime', {
+					name: this._name,
+					reason: compat.reason ?? '',
+				}));
             }
 
             const next = this.unionTables(acc, step, doEliminateDuplicateRows);
@@ -131,12 +158,17 @@ export class RecursiveAssignment extends RANodeBinary {
 
             stepRel.setNumRows(step.getNumRows());
 
+            const stepQueryFormulaHtml = this._recursive.getFormulaHtml(true, false);
+
+            stepRel.setMetaData('stepQueryFormulaHtml', stepQueryFormulaHtml);
+
             const execNode = new RecursiveExecutionNode(
                 `${this._name}_iter_${i}`,
                 accNode,
                 stepRel,
                 next,
-                step
+                step,
+                stepQueryFormulaHtml
             );
 
             this._lastRecursiveStep = execNode;

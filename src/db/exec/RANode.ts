@@ -23,6 +23,7 @@ export interface MetaData extends Object {
 	isInlineRelation?: boolean,
 	inlineRelationDefinition?: string,
 	fromVariable?: string,
+	stepQueryFormulaHtml?: string,
 }
 
 /**
@@ -52,7 +53,7 @@ export abstract class RANode {
 	_wrappedInParentheses: boolean = false;
 	_warnings: Warning[] = [];
 	_execTime: any;
-	
+
 	constructor(functionName = '') {
 		this._functionName = functionName;
 	}
@@ -156,7 +157,7 @@ export abstract class RANode {
 
 	/**
 	 * returns the relalg tree as html formula
-	 * @param isChildElement false can be used to prevent brackets for the root element 
+	 * @param isChildElement false can be used to prevent brackets for the root element
 	 */
 	abstract getFormulaHtml(printChildren: boolean, isChildElement: boolean): string;
 

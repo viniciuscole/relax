@@ -1,6 +1,7 @@
 import { RANode, Session } from './RANode';
 import { Table } from './Table';
 import { Schema } from './Schema';
+import { i18n } from 'calc2/i18n';
 
 export class RecursiveRef extends RANode {
     private _name: string;
@@ -16,8 +17,10 @@ export class RecursiveRef extends RANode {
     }
 
     getSchema(): Schema {
-        if (this._cachedSchema) return this._cachedSchema;
-        throw new Error(`Schema ainda não disponível para referência recursiva '${this._name}'.`);
+		if (this._cachedSchema) return this._cachedSchema;
+		this.throwExecutionError(i18n.t('db.messages.exec.recursive-ref-schema-not-available', {
+			name: this._name,
+		}));
     }
 
     check(): void {
@@ -28,7 +31,9 @@ export class RecursiveRef extends RANode {
         const t = session._recursiveVars?.[this._name];
 
         if (!t) {
-            throw new Error(`Referência recursiva '${this._name}' usada antes de inicialização.`);
+			this.throwExecutionError(i18n.t('db.messages.exec.recursive-ref-used-before-init', {
+				name: this._name,
+			}));
         }
         this.setResultNumRows(t.getNumRows());
         return t;
