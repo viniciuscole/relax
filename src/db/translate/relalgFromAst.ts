@@ -106,7 +106,7 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 					vars.push(...root.variables)
 					return rec(root.formula)
 				}
-				case 'RelationPredicate': return 
+				case 'RelationPredicate': return
 				case 'Negation': return rec(root.formula)
 				case 'QuantifiedExpression': {
 					vars.push(root.variable)
@@ -120,7 +120,7 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 				default: return null
 			}
 		}
-		
+
 		rec(root)
 
 		return vars
@@ -146,7 +146,7 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 				default: return null
 			}
 		}
-		
+
 		rec(root)
 
 		return relPreds
@@ -280,7 +280,7 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 		switch (nRaw.type) {
 			case 'TRC_Expr': {
 				const projections = nRaw.projections.flatMap((e: any) => {
-					if (e.type === 'columnName' || 
+					if (e.type === 'columnName' ||
 						(e.type === 'column' && e.name === '*')
 					) {
 						if (e.relAlias === null) {
@@ -479,9 +479,9 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 				if (nRaw.formula.type === 'RelationPredicate') {
 					throw new ExecutionError(
 						i18n.t('db.messages.translate.error-trc-unsafe-formula',
-						{ 
+						{
 							relation: nRaw.formula.relation,
-							variable: nRaw.formula.variable 
+							variable: nRaw.formula.variable
 						}),
 						nRaw.codeInfo
 					);
@@ -561,8 +561,22 @@ export function relalgFromSQLAstRoot(astRoot: sqlAst.rootSql | any, relations: {
                     throw new Error(`CTE recursivo "${n.name}": nó UNION inválido (sem child/child2)`);
                 }
 
-                const initialNode = rec(unionNode.child);
-                const recursiveNode = rec(unionNode.child2);
+				// Translate the seed first so we can infer the schema that the recursive
+				// reference must expose (needed for joins / column resolution in the recursive branch).
+				const initialNode = rec(unionNode.child);
+
+				initialNode.check();
+
+				// Make the recursive name resolvable inside the recursive branch and cache schema.
+				// This mirrors the RA translator behavior but additionally sets schema early.
+				let placeholder = (relations as any)[n.name];
+				if (!placeholder || !(placeholder instanceof RecursiveRef)) {
+					placeholder = new RecursiveRef(n.name);
+					(relations as any)[n.name] = placeholder;
+				}
+				(placeholder as RecursiveRef).setCachedSchema(initialNode.getSchema());
+
+				const recursiveNode = rec(unionNode.child2);
 
                 const raNode = new RecursiveAssignment(n.name, initialNode, recursiveNode);
 
@@ -580,16 +594,20 @@ export function relalgFromSQLAstRoot(astRoot: sqlAst.rootSql | any, relations: {
 					if (typeof (relations[n.name]) === 'undefined') {
 						throw new ExecutionError(i18n.t('db.messages.translate.error-relation-not-found', { name: n.name }), n.codeInfo);
 					}
-					const rel = relations[n.name].copy();
+					const entry: any = (relations as any)[n.name];
+					// Base tables are `Relation` (copyable). CTEs/variables are often stored as
+					// already-built RA nodes (not copyable). Both should be usable here.
+					const rel: any = (entry && typeof entry.copy === 'function') ? entry.copy() : entry;
 					if (n.relAlias === null) {
-						node = rel;
-						node._execTime = Date.now() - start;
-						break;
+						const out: any = rel;
+						out._execTime = Date.now() - start;
+						return out;
 					}
-					node = new RenameRelation(rel, n.relAlias);
-					node._execTime = Date.now() - start;
+					const out: any = new RenameRelation(rel, n.relAlias);
+					out._execTime = Date.now() - start;
+					return out;
 				}
-				break;
+				break
 
 			case 'statement':
 				{
@@ -998,10 +1016,16 @@ export function relalgFromRelalgAstNode(astNode: relalgAst.relalgOperation, rela
 	function recRANode(n: relalgAst.relalgOperation, localRelations = relations, recursionContext?: string): RANode {
 		switch (n.type) {
 			case 'recursiveAssignment': {
-                if (!(localRelations as any)[n.name] || !((localRelations as any)[n.name] instanceof RecursiveRef)) {
-					(localRelations as any)[n.name] = new RecursiveRef(n.name);
+				let placeholder = (localRelations as any)[n.name];
+				if (!placeholder || !(placeholder instanceof RecursiveRef)) {
+					placeholder = new RecursiveRef(n.name);
+					(localRelations as any)[n.name] = placeholder;
 				}
 				const initialNode = recRANode(n.child, localRelations);
+
+				initialNode.check();
+
+				(placeholder as RecursiveRef).setCachedSchema(initialNode.getSchema());
 				const recursiveNode = recRANode(n.child2, localRelations, n.name);
 				const node = new RecursiveAssignment(n.name, initialNode, recursiveNode);
 
@@ -1172,15 +1196,15 @@ export function relalgFromRelalgAstNode(astNode: relalgAst.relalgOperation, rela
 									}
 								}
 								else // normal columns
-									projections.push(new Column(el.name, el.relAlias));	
+									projections.push(new Column(el.name, el.relAlias));
 							}
 							// project all columns
 							else if (child.getMetaData('fromVariable') &&
 											 child.getMetaData('fromVariable') === el.relAlias) {
-								projections.push(new Column(el.name, null));	
+								projections.push(new Column(el.name, null));
 							}
 							else {
-								projections.push(new Column(el.name, el.relAlias));	
+								projections.push(new Column(el.name, el.relAlias));
 							}
 						}
 						else if (el.type === 'columnName') {
