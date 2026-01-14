@@ -2506,7 +2506,7 @@ QUnit.test('test selection with explicit column(s) of relation', function (asser
 
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
-		4,   d,   f 
+		4,   d,   f
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -2520,7 +2520,7 @@ QUnit.test('test selection with implicit column(s) of relation', function (asser
 
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
-		4,   d,   f 
+		4,   d,   f
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -2535,7 +2535,7 @@ QUnit.test('test selection with implicit column(s) of relation from local variab
 
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
-		4,   d,   f 
+		4,   d,   f
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -2549,7 +2549,7 @@ QUnit.test('test selection with explicit column(s) of relation from local variab
 
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
-		4,   d,   f 
+		4,   d,   f
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -2563,7 +2563,7 @@ QUnit.test('test selection with explicit column(s) of local variable', function 
 
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
-		4,   d,   f 
+		4,   d,   f
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -3114,7 +3114,7 @@ QUnit.test('test rename implicit column of local variable', function (assert) {
 		R.aa, R.b, R.c
 		1,   a,   d
 		3,   c,   c
-		4,   d,   f 
+		4,   d,   f
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -3130,7 +3130,7 @@ QUnit.test('test rename explicit column of relation from local variable', functi
 		R.aa, R.b, R.c
 		1,   a,   d
 		3,   c,   c
-		4,   d,   f 
+		4,   d,   f
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -3146,7 +3146,7 @@ QUnit.test('test rename explicit column of local variable', function (assert) {
 		R.aa, R.b, R.c
 		1,   a,   d
 		3,   c,   c
-		4,   d,   f 
+		4,   d,   f
 		5,   d,   b
 		6,   e,   f
 	}`, {});
@@ -3613,7 +3613,7 @@ QUnit.test('test selection using BETWEEN with numbers', function (assert) {
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
 		3,   c,   c
-		4,   d,   f 
+		4,   d,   f
 		5,   d,   b
 	}`, {});
 
@@ -3623,24 +3623,24 @@ QUnit.test('test selection using BETWEEN with numbers', function (assert) {
 QUnit.test('test selection using NOT BETWEEN with numbers', function (assert) {
 	const query = "sigma a not between 3 and 5 (R)";
 	const root = exec_ra(query, getTestRelations());
-	
+
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
 		1,   a,   d
 		6,   e,   f
 	}`, {});
-	
+
 	assert.deepEqual(root.getResult(), ref.getResult());
 });
 
 QUnit.test('test selection using BETWEEN with strings', function (assert) {
 	const query = "sigma b between 'c' and 'd' (R)";
 	const root = exec_ra(query, getTestRelations());
-	
+
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
 		3,   c,   c
-		4,   d,   f 
+		4,   d,   f
 		5,   d,   b
 	}`, {});
 
@@ -3650,7 +3650,7 @@ QUnit.test('test selection using BETWEEN with strings', function (assert) {
 QUnit.test('test selection using NOT BETWEEN with strings', function (assert) {
 	const query = "sigma b not between 'c' and 'd' (R)";
 	const root = exec_ra(query, getTestRelations());
-	
+
 	const ref = exec_ra(`{
 		R.a, R.b, R.c
 		1,   a,   d
@@ -3695,6 +3695,96 @@ QUnit.test('recursive transitive closure over flight edges', function (assert) {
   }`, {});
 
   assert.deepEqual(root.getResult(true), ref.getResult(true), 'fixpoint de recursão bate com o fecho esperado');
+});
+
+QUnit.test('recursive: semi-naive step tables are delta-only (no repeats)', function (assert) {
+	const query = `
+		recursive path =
+			pi departure, destination (flight)
+			union
+			pi path.departure, f.destination (
+				path ⨝ path.destination = f.departure (rho f (flight))
+			)
+		path
+	`;
+	const root: any = exec_ra(query, getTestFlights());
+	root.getResult(true);
+
+	function findRecursiveAssignment(n: any): any | null {
+		if (!n) return null;
+		if (n.constructor && n.constructor.name === 'RecursiveAssignment') return n;
+		try {
+			if (typeof n.getChild === 'function') {
+				const found = findRecursiveAssignment(n.getChild());
+				if (found) return found;
+			}
+			if (typeof n.getChild2 === 'function') {
+				const found2 = findRecursiveAssignment(n.getChild2());
+				if (found2) return found2;
+			}
+		} catch (e) {}
+		return null;
+	}
+
+	const raNode: any = findRecursiveAssignment(root);
+	assert.ok(raNode, 'found RecursiveAssignment node');
+
+	const topIter: any = (typeof raNode.getRecursiveSteps === 'function') ? raNode.getRecursiveSteps() : null;
+	assert.ok(topIter, 'has at least one RecursiveExecutionNode');
+
+	// Collect iteration nodes from oldest -> newest
+	const iterNodes: any[] = [];
+	let it: any = topIter;
+	while (it) {
+		iterNodes.unshift(it);
+		const leftChild = typeof it.getChild === 'function' ? it.getChild() : null;
+		if (leftChild && leftChild.constructor && leftChild.constructor.name === 'RecursiveExecutionNode') {
+			it = leftChild;
+		} else {
+			break;
+		}
+		if (iterNodes.length > 2000) break;
+	}
+
+	function normalizeRows(t: any): string[] {
+		const rows = t.getRows().map((r: any) => JSON.stringify(r));
+		rows.sort();
+		return rows;
+	}
+
+	// Expected deltas for the flight graph:
+	// seed: A->B, B->C, C->D
+	// step_0 (delta): A->C, B->D
+	// step_1 (delta): A->D
+	const expected0 = new Set([
+		JSON.stringify(['A', 'C']),
+		JSON.stringify(['B', 'D']),
+	]);
+	const expected1 = new Set([
+		JSON.stringify(['A', 'D']),
+	]);
+
+	// Verify each step contains only new rows (delta semantics)
+	const seen = new Set<string>();
+	for (const r of (raNode.getInitial().getResult(true).getRows() as any[])) {
+		seen.add(JSON.stringify(r));
+	}
+
+	for (let i = 0; i < iterNodes.length; i++) {
+		const stepTable: any = iterNodes[i].getStepResult();
+		const stepRows = normalizeRows(stepTable);
+		for (const rowKey of stepRows) {
+			assert.notOk(seen.has(rowKey), `iteration ${i}: step does not repeat prior rows`);
+			seen.add(rowKey);
+		}
+
+		if (i === 0) {
+			assert.deepEqual(new Set(stepRows), expected0, 'step_0 matches expected delta');
+		}
+		if (i === 1) {
+			assert.deepEqual(new Set(stepRows), expected1, 'step_1 matches expected delta');
+		}
+	}
 });
 
 QUnit.test('recursive alias propagation allows path.* in the recursive step', function (assert) {
