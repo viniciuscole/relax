@@ -61,9 +61,7 @@ export class RecursiveAssignment extends RANodeBinary {
       }
 
     private _propagateSchemaToRefs(schema: any) {
-         // clona se possível
         const clone = (typeof schema.copy === 'function') ? schema.copy() : schema;
-        // força alias = nome da variável recursiva (ex.: "path")
         if (clone && Array.isArray((clone as any)._relAliases)) {
             (clone as any)._relAliases = (clone as any)._relAliases.map(() => this._name);
         }
@@ -89,18 +87,14 @@ export class RecursiveAssignment extends RANodeBinary {
     }
 
     check() {
-        // Valida o nó inicial e obtém o esquema
         this._initial.check();
         const initialSchema = this._initial.getSchema();
 
-        // Propaga o esquema inicial para os nós recursivos
         this._propagateSchemaToRefs(initialSchema);
 
-        // Valida o nó recursivo
         this._recursive.check();
         const recursiveSchema = this._recursive.getSchema();
 
-        // 4) checa compatibilidade para união
         const compat = this._schemasUnionCompatible(initialSchema, recursiveSchema);
         if (!compat.ok) {
 			this.throwExecutionError(i18n.t('db.messages.exec.recursive.seed-step-not-union-compatible', {
@@ -121,6 +115,24 @@ export class RecursiveAssignment extends RANodeBinary {
         return res;
     }
 
+    private _computeDelta(step: Table, accKeySet: Set<string>): Table {
+        // Returns only rows from `step` that are not already present in `accKeySet`.
+        const delta = new Table();
+        delta.setSchema(step.getSchema().copy());
+
+        const rows = step.getRows();
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const key = JSON.stringify(row);
+            if (accKeySet.has(key)) {
+                continue;
+            }
+            accKeySet.add(key);
+            delta.addRow(row);
+        }
+        return delta;
+    }
+
     getResult(doEliminateDuplicateRows: boolean = true, session?: Session): Table {
         session = this._returnOrCreateSession(session);
 
@@ -132,51 +144,104 @@ export class RecursiveAssignment extends RANodeBinary {
         let accNode = this._initial;
 
         if (!session._recursiveVars) session._recursiveVars = {};
-        session._recursiveVars[this._name] = acc;
 
-        for (let i = 0; i < 1024; i++) {
-            const step = this._recursive.getResult(doEliminateDuplicateRows, session);
-
-            // Safety Guard
-            const compat = this._schemasUnionCompatible(acc.getSchema(), step.getSchema());
-            if (!compat.ok) {
-				this.throwExecutionError(i18n.t('db.messages.exec.recursive.union-incompatible-at-runtime', {
-					name: this._name,
-					reason: compat.reason ?? '',
-				}));
+        // In set semantics (UNION / dedup), use semi-naive evaluation:
+        // each recursive iteration sees only the delta (new rows) from the previous step.
+        // This avoids re-deriving old tuples and makes *_step_i contain only new rows.
+        if (doEliminateDuplicateRows) {
+            const accKeySet = new Set<string>();
+            for (const row of acc.getRows()) {
+                accKeySet.add(JSON.stringify(row));
             }
 
-            const next = this.unionTables(acc, step, doEliminateDuplicateRows);
+            let delta = acc;
+            session._recursiveVars[this._name] = delta;
 
+            for (let i = 0; i < 1024; i++) {
+                const step = this._recursive.getResult(true, session);
 
-            if (next.equals(acc)) {
+                // Safety Guard
+                const compat = this._schemasUnionCompatible(acc.getSchema(), step.getSchema());
+                if (!compat.ok) {
+                    this.throwExecutionError(i18n.t('db.messages.exec.recursive.union-incompatible-at-runtime', {
+                        name: this._name,
+                        reason: compat.reason ?? '',
+                    }));
+                }
+
+                const newRows = this._computeDelta(step, accKeySet);
+                if (newRows.getNumRows() === 0) {
+                    break;
+                }
+
+                const next = this.unionTables(acc, newRows, false);
+
+                const stepRel = newRows.createRelation(`${this._name}_step_${i}`);
+                stepRel.setNumRows(newRows.getNumRows());
+                const stepQueryFormulaHtml = this._recursive.getFormulaHtml(true, false);
+                stepRel.setMetaData('stepQueryFormulaHtml', stepQueryFormulaHtml);
+
+                const execNode = new RecursiveExecutionNode(
+                    `${this._name}_iter_${i}`,
+                    accNode,
+                    stepRel,
+                    next,
+                    newRows,
+                    stepQueryFormulaHtml
+                );
+
+                this._lastRecursiveStep = execNode;
+                accNode = execNode;
                 acc = next;
-                break;
+                this._iterations.push(next);
+
+                delta = newRows;
+                session._recursiveVars[this._name] = delta;
             }
+        }
+        else {
+            session._recursiveVars[this._name] = acc;
 
-            const stepRel = step.createRelation(`${this._name}_step_${i}`);
+            for (let i = 0; i < 1024; i++) {
+                const step = this._recursive.getResult(false, session);
 
-            stepRel.setNumRows(step.getNumRows());
+                // Safety Guard
+                const compat = this._schemasUnionCompatible(acc.getSchema(), step.getSchema());
+                if (!compat.ok) {
+                    this.throwExecutionError(i18n.t('db.messages.exec.recursive.union-incompatible-at-runtime', {
+                        name: this._name,
+                        reason: compat.reason ?? '',
+                    }));
+                }
 
-            const stepQueryFormulaHtml = this._recursive.getFormulaHtml(true, false);
+                const next = this.unionTables(acc, step, false);
 
-            stepRel.setMetaData('stepQueryFormulaHtml', stepQueryFormulaHtml);
+                if (next.equals(acc)) {
+                    acc = next;
+                    break;
+                }
 
-            const execNode = new RecursiveExecutionNode(
-                `${this._name}_iter_${i}`,
-                accNode,
-                stepRel,
-                next,
-                step,
-                stepQueryFormulaHtml
-            );
+                const stepRel = step.createRelation(`${this._name}_step_${i}`);
+                stepRel.setNumRows(step.getNumRows());
+                const stepQueryFormulaHtml = this._recursive.getFormulaHtml(true, false);
+                stepRel.setMetaData('stepQueryFormulaHtml', stepQueryFormulaHtml);
 
-            this._lastRecursiveStep = execNode;
-            accNode = execNode;
-            acc = next;
-            this._iterations.push(next);
+                const execNode = new RecursiveExecutionNode(
+                    `${this._name}_iter_${i}`,
+                    accNode,
+                    stepRel,
+                    next,
+                    step,
+                    stepQueryFormulaHtml
+                );
 
-            session._recursiveVars[this._name] = next;
+                this._lastRecursiveStep = execNode;
+                accNode = execNode;
+                acc = next;
+                this._iterations.push(next);
+
+                session._recursiveVars[this._name] = next;
+            }
         }
 
         const finalSchema = acc.getSchema();
