@@ -47,9 +47,9 @@ export class EditorBagalg extends React.Component<Props, State> {
 		this.replaceText = this.replaceText.bind(this);
 	}
 
-	
-	
-	
+
+
+
 
 	render() {
 		const { group } = this.props;
@@ -77,7 +77,8 @@ export class EditorBagalg extends React.Component<Props, State> {
 					self.historyAddEntry(text);
 
 					const ast = parseRelalg(text, Object.keys(relations), false);
-					replaceVariables(ast, relations);
+					const stmtRelations: any = { ...relations };
+					replaceVariables(ast, stmtRelations);
 
 					if (ast.child === null) {
 						if (ast.assignments.length > 0) {
@@ -89,7 +90,7 @@ export class EditorBagalg extends React.Component<Props, State> {
 					}
 
 
-					const root = relalgFromRelalgAstRoot(ast, relations);
+					const root = relalgFromRelalgAstRoot(ast, stmtRelations);
 					root.check();
 
 					if (self.props.enableInlineRelationEditor) {
@@ -114,7 +115,8 @@ export class EditorBagalg extends React.Component<Props, State> {
 					const hints = [];
 
 					const ast = parseRelalg(text, Object.keys(relations), false);
-					replaceVariables(ast, relations);
+					const stmtRelations: any = { ...relations };
+					replaceVariables(ast, stmtRelations);
 
 					for (let i = 0; i < ast.assignments.length; i++) {
 						hints.push(ast.assignments[i].name);
@@ -130,7 +132,7 @@ export class EditorBagalg extends React.Component<Props, State> {
 					}
 
 
-					const root = relalgFromRelalgAstRoot(ast, relations);
+					const root = relalgFromRelalgAstRoot(ast, stmtRelations);
 					root.check();
 
 					// replace text (text-magic)

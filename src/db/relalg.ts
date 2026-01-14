@@ -13,7 +13,7 @@ import { replaceVariables } from './translate/replaceVariables';
 
 
 export { parseRelalg, parseRelalgGroup } from './parser/parser_ra';
-export { 
+export {
 	relalgFromRelalgAstNode,
 	relalgFromRelalgAstRoot,
 	relalgFromSQLAstRoot,
@@ -111,7 +111,7 @@ export function queryWithReplacedOperatorsFromAst(
 	operatorPositions.sort(
 		(a, b) =>
 			a.location.start.line > b.location.start.line ?
-				1 : 
+				1 :
 				(
 					a.location.start.line === b.location.start.line &&
 					a.location.start.column > b.location.start.column ?
@@ -151,7 +151,7 @@ export function queryWithReplacedOperatorsFromAst(
 			else if (cursor.line < location.start.line) {
 				// noop;
 			}
-			// cursor was below the old operator 
+			// cursor was below the old operator
 			else if (cursor.line > location.end.line) {
 				// just update the line; column is unchanged
 				cursor.line -= location.end.line - location.start.line;
@@ -216,7 +216,7 @@ export function queryWithReplacedTRCOperatorsFromAst(
 			'for all': '∀',
 		},
 	};
-	
+
 	// Naive implementation to replace operators in a TRC query expression
 	// TODO: Walk through AST and replace based on the operator type/name
 	for (const op in newOperators[mode]) {
@@ -281,12 +281,13 @@ export function parseSQLDump(text: string): relalgAst.GroupRoot {
 
 
 export function executeRelalg(text: string, relations: { [name: string]: Relation } = {}, strictRA: boolean = true): RANode {
-	relations = relations || {};
+	const baseRelations = relations || {};
+	const localRelations: { [name: string]: Relation } = { ...baseRelations };
 
-	const ast = parseRelalg(text, Object.keys(relations), strictRA);
-	replaceVariables(ast, relations);
+	const ast = parseRelalg(text, Object.keys(localRelations), strictRA);
+    replaceVariables(ast, localRelations);
 
-	const root = relalgFromRelalgAstRoot(ast, relations);
-	root.check();
-	return root;
+    const root = relalgFromRelalgAstRoot(ast, localRelations);
+    root.check();
+    return root;
 }
