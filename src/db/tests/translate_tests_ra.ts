@@ -3955,8 +3955,8 @@ QUnit.test('recursive: iterations count does not exceed limit', function (assert
         if (count > 2000) break;
     }
 
-    // assert within algorithm limit (1024)
-    assert.ok(count <= 1024, `iterations (${count}) do not exceed 1024 limit`);
+    // assert within algorithm limit (100)
+    assert.ok(count <= 100, `iterations (${count}) do not exceed 100 limit`);
 });
 
 QUnit.test('recursive: step relations preserve schema and are safe to inspect', function (assert) {
