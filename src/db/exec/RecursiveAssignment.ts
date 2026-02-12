@@ -157,7 +157,8 @@ export class RecursiveAssignment extends RANodeBinary {
             let delta = acc;
             session._recursiveVars[this._name] = delta;
 
-            for (let i = 0; i < 1024; i++) {
+            const MAX_ITERATIONS = 100;
+            for (let i = 0; i < MAX_ITERATIONS; i++) {
                 const step = this._recursive.getResult(true, session);
 
                 // Safety Guard
@@ -202,7 +203,8 @@ export class RecursiveAssignment extends RANodeBinary {
         else {
             session._recursiveVars[this._name] = acc;
 
-            for (let i = 0; i < 1024; i++) {
+            const MAX_ITERATIONS = 1024;
+            for (let i = 0; i < MAX_ITERATIONS; i++) {
                 const step = this._recursive.getResult(false, session);
 
                 // Safety Guard
