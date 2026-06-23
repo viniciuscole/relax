@@ -76,6 +76,64 @@
 
 		return root;
 	}
+
+	function _findFirstUnionSql(node){
+		if(!node || typeof node !== 'object') return null;
+		if(node.type === 'union') return node;
+		for (var k in node) {
+			if(!Object.prototype.hasOwnProperty.call(node, k)) continue;
+			var v = node[k];
+			if(!v || typeof v !== 'object') continue;
+			if(Array.isArray(v)){
+				for (var i = 0; i < v.length; i++){
+					var found = _findFirstUnionSql(v[i]);
+					if(found) return found;
+				}
+			}
+			else {
+				var found2 = _findFirstUnionSql(v);
+				if(found2) return found2;
+			}
+		}
+		return null;
+	}
+
+	function _containsRelationSql(node, nameLower){
+		if(!node || typeof node !== 'object') return false;
+		if(node.type === 'relation' && typeof node.name === 'string'){
+			return node.name.toLowerCase() === nameLower;
+		}
+		for (var k in node) {
+			if(!Object.prototype.hasOwnProperty.call(node, k)) continue;
+			var v = node[k];
+			if(!v || typeof v !== 'object') continue;
+			if(Array.isArray(v)){
+				for (var i = 0; i < v.length; i++){
+					if(_containsRelationSql(v[i], nameLower)) return true;
+				}
+			}
+			else {
+				if(_containsRelationSql(v, nameLower)) return true;
+			}
+		}
+		return false;
+	}
+
+	function _assignmentToRecursiveIfNeeded(a){
+		if(!a || a.type !== 'assignment') return a;
+		if(!a.child || !a.child.statement) return a;
+		var nameLower = (a.name || '').toLowerCase();
+		if(!nameLower) return a;
+		if(!_findFirstUnionSql(a.child.statement)) return a;
+		if(!_containsRelationSql(a.child.statement, nameLower)) return a;
+		return {
+			type: 'recursiveAssignment',
+			name: a.name,
+			statement: a.child.statement,
+			columns: a.columns || null,
+			codeInfo: a.codeInfo || getCodeInfo()
+		};
+	}
 }
 
 
@@ -166,7 +224,7 @@ unqualifiedColumnName
 			error(t('db.messages.parser.error-sql-invalid-column-name', {str: a}));
 		return a;
 	}
-	
+
 relation
 = a:relationName
 	{
@@ -374,13 +432,33 @@ listOfGroupByArgs
 	return t;
 }
 
+cteColumnName
+= name:unqualifiedColumnName
+	{ return name; }
+
+cteColumnList
+= first:cteColumnName rest:(_ ',' _ cteColumnName)*
+	{
+		var cols = [first];
+		for (var i = 0; i < rest.length; i++) {
+			cols.push(rest[i][3]);
+		}
+		return cols;
+	}
+
+cteOptionalColumnList
+= cols:(_ '(' _ cteColumnList _ ')')?
+	{ return cols ? cols[3] : null; }
+
 withClauseArgument
-= name:relationName __ 'as'i _ '(' sub:statement ')'
+
+= name:relationName cols:cteOptionalColumnList __ 'as'i _ '(' _ sub:statement _ ')'
 	{
 		sub.wrappedInParentheses = true;
 		return {
 			type: 'assignment',
 			name: name,
+			columns: cols,
 			child: {
 				type: 'relationFromSubstatement',
 				statement: sub,
@@ -393,6 +471,20 @@ withClauseArgument
 		};
 	}
 
+
+recursiveWithClauseArgument
+	= 'recursive'i __ name:relationName cols:cteOptionalColumnList __ 'as'i _ "(" _
+		stmt:statement
+	_ ")"
+{
+  return {
+    type: "recursiveAssignment",
+    name: name,
+    columns: cols,
+    statement: stmt,
+    codeInfo: getCodeInfo()
+  };
+}
 
 // nodes:
 
@@ -416,11 +508,18 @@ root
 	}
 
 withClause
-= 'with'i __ first:withClauseArgument rest:(_ ',' _ withClauseArgument)*
+
+= 'with'i __ isRecursive:('recursive'i __ { return true; })? first:(recursiveWithClauseArgument / withClauseArgument) rest:(_ ',' _ (recursiveWithClauseArgument / withClauseArgument))*
 	{
 		var assignments = [first];
 		for(var i = 0; i < rest.length; i++){
 			assignments.push(rest[i][3]);
+		}
+
+		if(isRecursive){
+			for(var j = 0; j < assignments.length; j++){
+				assignments[j] = _assignmentToRecursiveIfNeeded(assignments[j]);
+			}
 		}
 		return assignments;
 	}
@@ -1011,14 +1110,14 @@ dbDumpRoot
 		return root;
 
 	}
-	
+
 useDbStatement
 = 'use'i __ name:$([a-zA-Z_0-9-]+) _ ';'
-	{ 
+	{
 		return {
-			type: 'groupName', 
+			type: 'groupName',
 			name: name
-		}; 
+		};
 	}
 
 createTableStmt_columnType

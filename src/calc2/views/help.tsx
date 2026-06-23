@@ -705,7 +705,7 @@ export class Help extends React.Component<Props> {
 									</div>
 
 									<p>An assignment (= definition of a variable) is no valid relational algebra expression on its own.
-										If you miss the acutal query a error is thrown (<i>Error: only assignments found; query is
+										If you miss the actual query a error is thrown (<i>Error: only assignments found; query is
 											missing</i>).
 									</p>
 

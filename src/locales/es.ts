@@ -236,6 +236,12 @@ export const langES: Partial<typeof langEN> = {
     '<br /><b>Y = </b> pi b ( b )',
     '<br />( X ) <span class="math">&cup;</span> ( Y )<br /></div>',
   ].join('\n'),
+  'calc.editors.ra.toolbar.recursive-assignment': 'relación recursiva',
+	'calc.editors.ra.toolbar.recursive-assignment-content': [
+    '<b class="math">μ</b> t = S <span class="math">&cup;</span> ( t <b>⨝</b> T )',
+    '<br /><b>mu</b> t = S union ( t join T )',
+    '<br /><b>recursive</b> t = S <span class="math">&cup;</span> ( t ⨝ T )'
+  ].join('\n'),
   'calc.editors.ra.toolbar.single-line-comment': 'comentario de una línea',
   'calc.editors.ra.toolbar.single-line-comment-content': '<span class="math">&pi;</span> a, b A <b>-- useful comment</b>',
   'calc.editors.ra.toolbar.multi-line-comment': 'comentario de múltiples líneas',

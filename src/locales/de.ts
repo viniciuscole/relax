@@ -164,6 +164,8 @@ export const langDE: Partial<typeof langEN> = {
 	'calc.editors.ra.toolbar.right-semi-join': 'right semi join',
 	'calc.editors.ra.toolbar.anti-join': 'anti join',
 	'calc.editors.ra.toolbar.assignment': 'Zuweisung',
+	'calc.editors.ra.toolbar.recursive-assignment': 'Rekursive Relationen',
+	'calc.editors.ra.toolbar.recursive-assignment-content': '<b class="math">μ</b> t = S <span class="math">&cup;</span> ( t <b>⨝</b> T )\n<br /><b>mu</b> t = S union ( t join T )\n<br /><b>recursive</b> t = S <span class="math">&cup;</span> ( t ⨝ T )',
 	'calc.editors.ra.toolbar.single-line-comment': 'Kommentar einzeilig',
 	'calc.editors.ra.toolbar.multi-line-comment': 'Kommentar mehrzeilig',
 	'calc.editors.ra.toolbar.inline-relation': 'inline-Relation',

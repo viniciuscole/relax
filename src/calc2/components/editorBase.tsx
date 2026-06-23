@@ -172,8 +172,9 @@ CodeMirror.defineMode('relalg', function () {
 		'pi', 'sigma', 'rho', 'tau', 'gamma', '<-', '->', 'intersect', 'union', 'except', '/', '-', '\\\\', 'x', 'cross join', 'join',
 		'inner join', 'natural join', 'left join', 'right join', 'left outer join', 'right outer join',
 		'left semi join', 'right semi join', 'anti join', 'anti semi join', 'and', 'or', 'xor', 'not between', 'between',
+		'mu', 'recursive'
 	];
-	const keywordsMath = ['π', 'σ', 'ρ', 'τ', '←', '→', '∩', '∪', '÷', '-', '⨯', '⨝', '⟕', '⟖', '⟗', '⋉', '⋊', '▷', 'γ'];
+	const keywordsMath = ['π', 'σ', 'ρ', 'τ', '←', '→', '∩', '∪', '÷', '-', '⨯', '⨝', '⟕', '⟖', '⟗', '⋉', '⋊', '▷', 'γ', 'μ'];
 	const operators = ['<-', '->', '>=', '<=', '=', '∧', '∨', '⊻', '⊕', '≠', '=', '¬', '>', '<', '≥', '≤'];
 	const matchAny = (
 		stream: CodeMirror.StringStream,
@@ -281,8 +282,9 @@ CodeMirror.defineMode('bagalg', function () {
 		'delta', 'pi', 'sigma', 'rho', 'tau', 'gamma', '<-', '->', 'intersect', 'union', 'except', '/', '-', '\\\\', 'x', 'cross join', 'join',
 		'inner join', 'natural join', 'left join', 'right join', 'left outer join', 'right outer join',
 		'left semi join', 'right semi join', 'anti join', 'anti semi join', 'and', 'or', 'xor', 'not between', 'between',
+		'mu', 'recursive'
 	];
-	const keywordsMath = ['∂', 'π', 'σ', 'ρ', 'τ', '←', '→', '∩', '∪', '÷', '-', '⨯', '⨝', '⟕', '⟖', '⟗', '⋉', '⋊', '▷', 'γ'];
+	const keywordsMath = ['∂', 'π', 'σ', 'ρ', 'τ', '←', '→', '∩', '∪', '÷', '-', '⨯', '⨝', '⟕', '⟖', '⟗', '⋉', '⋊', '▷', 'γ', 'μ'];
 	const operators = ['<-', '->', '>=', '<=', '=', '∧', '∨', '⊻', '⊕', '≠', '=', '¬', '>', '<', '≥', '≤'];
 	const matchAny = (
 		stream: CodeMirror.StringStream,

@@ -8,6 +8,7 @@ export const langPT = {
       'criar uma nova rela\u00e7\u00e3o aninhada usando o editor',
     'calc.editors.ra.toolbar.assignment-content':
       '<div><b>X = </b> pi a ( A )\n<br /><b>Y = </b> pi b ( b )\n<br />( X ) <span class="math">&cup;</span> ( Y )<br /></div>',
+    'calc.editors.ra.toolbar.recursive-assignment-content': '<b class="math">μ</b> t = S <span class="math">&cup;</span> ( t <b>⨝</b> T )\n<br /><b>mu</b> t = S union ( t join T )\n<br /><b>recursive</b> t = S <span class="math">&cup;</span> ( t ⨝ T )',
     'calc.editors.ra.toolbar.greater-or-equals-content': '<div>&sigma',
     'calc.editors.ra.toolbar.duplicate-elimination-content':
       '<b class=\"math\">∂</b> <b>(</b> A <b>)</b>\n<br><b>delta</b> A',
@@ -204,6 +205,7 @@ export const langPT = {
     'db.messages.parser.error-group-header-name-missing':
       'o nome do grupo est\u00e1 ausente (group: ....)',
     'calc.editors.ra.toolbar.assignment': 'atribui\u00e7\u00e3o',
+    'calc.editors.ra.toolbar.recursive-assignment': 'rela\u00e7\u00e3o recursiva',
     'calc.editors.ra.toolbar.or-content':
       '<div><span class="math">&sigma;</span> a < b <b class="math">\u2228</b> b <span class="math">\u2260</span> c ( A )</div>',
     'calc.editors.ra.toolbar.right-semi-join': 'right semi join',

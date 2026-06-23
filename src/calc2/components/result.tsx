@@ -89,12 +89,16 @@ export class Result extends React.Component<Props, State> {
 
 				<div className="result">
 					<div>
-						<h4
-							className="result-formula"
-							dangerouslySetInnerHTML={{
-								__html: activeNode.getFormulaHtml(true, false),
-							}}
-						/>
+							{(() => {
+								const stepFormulaHtml = activeNode.getMetaData('stepQueryFormulaHtml');
+								const formulaHtml = stepFormulaHtml ?? activeNode.getFormulaHtml(true, false);
+								return (
+									<h4
+										className="result-formula"
+										dangerouslySetInnerHTML={{ __html: formulaHtml }}
+									/>
+								);
+							})()}
 						<div>
 							{t('calc.result.exec.time')} {execTime} ms
 						</div>

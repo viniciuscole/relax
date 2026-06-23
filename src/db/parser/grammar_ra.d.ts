@@ -39,6 +39,17 @@ declare module relalgAst {
 		codeInfo: CodeInfo,
 	}
 
+	interface recursiveAssignment {
+		type: 'recursiveAssignment',
+		name: string,
+		child: relalgOperation,
+		child2: relalgOperation,
+		assignments?: undefined,
+		codeInfo: CodeInfo,
+		wrappedInParentheses?: boolean,
+		metaData?: { [key: string]: any },
+	}
+
 	type assignment = {
 		type: 'assignment',
 		name: string,
@@ -74,6 +85,7 @@ declare module relalgAst {
 		| leftOuterJoin
 		| rightOuterJoin
 		| fullOuterJoin
+		| recursiveAssignment
 		;
 
 	interface columnName {

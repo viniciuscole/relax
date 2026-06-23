@@ -73,14 +73,18 @@ export function replaceVariables(
 		}
 	});
 
-
-
 	for (let i = 0; i < root.assignments.length; i++) {
-		const assignment = root.assignments[i];
+		const assignment: any = root.assignments[i];
+
+		if (assignment.type === 'recursiveAssignment') {
+            continue;
+        }
+
 		const { name, child } = assignment;
 		const childRelations: RelationPosition[] = getRelationsIn(assignment.child);
 
-		if (predefinedRelations.has(name) || variables.has(name)) {
+		const isDeclaredHere = variableNames.has(name);
+		if (variables.has(name) || (predefinedRelations.has(name) && !isDeclaredHere)) {
 			const e = new ExecutionError(i18n.t('db.messages.translate.error-variable-name-conflict', { name }), assignment.codeInfo);
 			throw e;
 		}

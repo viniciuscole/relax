@@ -48,13 +48,14 @@ export class Api extends React.Component<Props, State> {
 			group.tables.forEach(table => {
 				relations[table.tableName] = table.relation;
 			});
+			const stmtRelations: any = { ...relations };
 
 			let doEliminateDuplicates = true;
 
 			switch (mode) {
 				case 'sql': {
 					const ast = parseSQLSelect(query);
-					replaceVariables(ast, relations);
+					replaceVariables(ast, stmtRelations);
 
 					if (ast.child === null) {
 						if (ast.assignments.length > 0) {
@@ -65,7 +66,7 @@ export class Api extends React.Component<Props, State> {
 						}
 					}
 
-					const root = relalgFromSQLAstRoot(ast, relations);
+					const root = relalgFromSQLAstRoot(ast, stmtRelations);
 					root.check();
 					this.result = JSON.stringify(root.getResult(doEliminateDuplicates));
 					this.success = "true";
@@ -77,7 +78,7 @@ export class Api extends React.Component<Props, State> {
 				default: {
 					this.mode = 'relalg';
 					const ast = parseRelalg(query, Object.keys(relations), doEliminateDuplicates);
-					replaceVariables(ast, relations);
+					replaceVariables(ast, stmtRelations);
 					if (ast.child === null) {
 						if (ast.assignments.length > 0) {
 							throw new Error(t('calc.messages.error-query-missing-assignments-found'));
@@ -86,7 +87,7 @@ export class Api extends React.Component<Props, State> {
 							throw new Error(t('calc.messages.error-query-missing'));
 						}
 					}
-					const root = relalgFromRelalgAstRoot(ast, relations);
+					const root = relalgFromRelalgAstRoot(ast, stmtRelations);
 					root.check();
 					this.result = JSON.stringify(root.getResult(doEliminateDuplicates))
 					this.success = "true"

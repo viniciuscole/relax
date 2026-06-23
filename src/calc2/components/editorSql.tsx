@@ -49,7 +49,7 @@ export class EditorSql extends React.Component<Props> {
 			relations[table.tableName] = table.relation;
 		});
 
-		
+
 		return (
 			<EditorBase
 				textChange={(cm: CodeMirror.Editor) => { } }
@@ -68,8 +68,9 @@ export class EditorSql extends React.Component<Props> {
 					self.historyAddEntry(text);
 
 					const ast = parseSQLSelect(text);
-					replaceVariables(ast, relations);
-			
+					const stmtRelations: any = { ...relations };
+					replaceVariables(ast, stmtRelations);
+
 
 					if (ast.child === null) {
 						if (ast.assignments.length > 0) {
@@ -81,8 +82,8 @@ export class EditorSql extends React.Component<Props> {
 					}
 
 
-					const root = relalgFromSQLAstRoot(ast, relations);
-			
+					const root = relalgFromSQLAstRoot(ast, stmtRelations);
+
 					if (root) {
 						root.check();
 
@@ -100,8 +101,8 @@ export class EditorSql extends React.Component<Props> {
 							),
 						};
 					}
-					
-		
+
+
 				}}
 				tab="sql"
 				linterFunction={(self: EditorBase, editor: CodeMirror.Editor, text: string) => {
@@ -109,7 +110,8 @@ export class EditorSql extends React.Component<Props> {
 
 
 					const ast = parseSQLSelect(text);
-					replaceVariables(ast, relations);
+					const stmtRelations: any = { ...relations };
+					replaceVariables(ast, stmtRelations);
 
 					for (let i = 0; i < ast.assignments.length; i++) {
 						hints.push(ast.assignments[i].name);
@@ -125,7 +127,7 @@ export class EditorSql extends React.Component<Props> {
 					}
 
 
-					const root = relalgFromSQLAstRoot(ast, relations);
+					const root = relalgFromSQLAstRoot(ast, stmtRelations);
 					root.check();
 
 					// use columns from all calculated schemas for hints

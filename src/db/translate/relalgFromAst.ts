@@ -22,6 +22,8 @@ import { SemiJoin } from '../exec/joins/SemiJoin';
 import { OrderBy } from '../exec/OrderBy';
 import { Projection, ProjectionColumn } from '../exec/Projection';
 import { RANode } from '../exec/RANode';
+import { RecursiveAssignment } from 'db/exec/RecursiveAssignment';
+import { RecursiveRef } from 'db/exec/RecursiveRef';
 import { Relation } from '../exec/Relation';
 import { RenameColumns } from '../exec/RenameColumns';
 import { RenameRelation } from '../exec/RenameRelation';
@@ -30,6 +32,15 @@ import { Selection } from '../exec/Selection';
 import { Union } from '../exec/Union';
 import * as ValueExpr from '../exec/ValueExpr';
 import { EliminateDuplicates } from '../exec/EliminateDuplicates';
+import { Table } from '../exec/Table';
+
+function getEntryCaseInsensitive(map: Record<string, any>, name: string) {
+	if (!map) return undefined;
+	if (name in map) return map[name];
+	const lower = name.toLowerCase();
+	const k = Object.keys(map).find(key => key.toLowerCase() === lower);
+	return k ? map[k] : undefined;
+  }
 
 function parseJoinCondition(condition: relalgAst.booleanExpr | string[] | null): JoinCondition {
 	if (condition === null) {
@@ -95,7 +106,7 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 					vars.push(...root.variables)
 					return rec(root.formula)
 				}
-				case 'RelationPredicate': return 
+				case 'RelationPredicate': return
 				case 'Negation': return rec(root.formula)
 				case 'QuantifiedExpression': {
 					vars.push(root.variable)
@@ -109,7 +120,7 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 				default: return null
 			}
 		}
-		
+
 		rec(root)
 
 		return vars
@@ -135,7 +146,7 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 				default: return null
 			}
 		}
-		
+
 		rec(root)
 
 		return relPreds
@@ -269,7 +280,7 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 		switch (nRaw.type) {
 			case 'TRC_Expr': {
 				const projections = nRaw.projections.flatMap((e: any) => {
-					if (e.type === 'columnName' || 
+					if (e.type === 'columnName' ||
 						(e.type === 'column' && e.name === '*')
 					) {
 						if (e.relAlias === null) {
@@ -468,9 +479,9 @@ export function relalgFromTRCAstRoot(astRoot: trcAst.TRC_Expr | null, relations:
 				if (nRaw.formula.type === 'RelationPredicate') {
 					throw new ExecutionError(
 						i18n.t('db.messages.translate.error-trc-unsafe-formula',
-						{ 
+						{
 							relation: nRaw.formula.relation,
-							variable: nRaw.formula.variable 
+							variable: nRaw.formula.variable
 						}),
 						nRaw.codeInfo
 					);
@@ -508,9 +519,74 @@ export function relalgFromSQLAstRoot(astRoot: sqlAst.rootSql | any, relations: {
 		raNode.setCodeInfoObject(astNode.codeInfo);
 	}
 
+	function findFirstUnionSql(node: any): any | null {
+		if (!node || typeof node !== 'object') return null;
+		if (node.type === 'union') return node;
+
+		for (const key of Object.keys(node)) {
+			const v = (node as any)[key];
+			if (!v || typeof v !== 'object') continue;
+			if (Array.isArray(v)) {
+				for (const el of v) {
+					const found = findFirstUnionSql(el);
+					if (found) return found;
+				}
+			} else {
+				const found = findFirstUnionSql(v);
+				if (found) return found;
+			}
+		}
+		return null;
+	}
+
 	function rec(nRaw: sqlAst.astNode | any): RANode {
 		let node: RANode | null = null;
 		switch (nRaw.type) {
+			case 'recursiveAssignment': {
+                const start = Date.now();
+                const n = nRaw as sqlAst.recursiveAssignment;
+
+                if (!n.statement) {
+                    throw new Error('recursiveAssignment sem statement');
+                }
+
+                const stmt = n.statement as any;
+
+                const unionNode = findFirstUnionSql(stmt);
+                if (!unionNode) {
+                    throw new Error(`CTE recursivo "${n.name}": não encontrei nó UNION no statement`);
+                }
+
+                if (!unionNode.child || !unionNode.child2) {
+                    throw new Error(`CTE recursivo "${n.name}": nó UNION inválido (sem child/child2)`);
+                }
+
+				// Translate the seed first so we can infer the schema that the recursive
+				// reference must expose (needed for joins / column resolution in the recursive branch).
+				const initialNode = rec(unionNode.child);
+
+				initialNode.check();
+
+				// Make the recursive name resolvable inside the recursive branch and cache schema.
+				// This mirrors the RA translator behavior but additionally sets schema early.
+				let placeholder = (relations as any)[n.name];
+				if (!placeholder || !(placeholder instanceof RecursiveRef)) {
+					placeholder = new RecursiveRef(n.name);
+					(relations as any)[n.name] = placeholder;
+				}
+				(placeholder as RecursiveRef).setCachedSchema(initialNode.getSchema());
+
+				const recursiveNode = rec(unionNode.child2);
+
+                const raNode = new RecursiveAssignment(n.name, initialNode, recursiveNode);
+
+                setAdditionalData(n as any, raNode);
+                raNode.setCodeInfoObject(n.codeInfo);
+                raNode._execTime = Date.now() - start;
+
+                (relations as any)[n.name] = raNode;
+                return raNode;
+            }
 			case 'relation':
 				{
 					const n: any = nRaw;
@@ -518,16 +594,20 @@ export function relalgFromSQLAstRoot(astRoot: sqlAst.rootSql | any, relations: {
 					if (typeof (relations[n.name]) === 'undefined') {
 						throw new ExecutionError(i18n.t('db.messages.translate.error-relation-not-found', { name: n.name }), n.codeInfo);
 					}
-					const rel = relations[n.name].copy();
+					const entry: any = (relations as any)[n.name];
+					// Base tables are `Relation` (copyable). CTEs/variables are often stored as
+					// already-built RA nodes (not copyable). Both should be usable here.
+					const rel: any = (entry && typeof entry.copy === 'function') ? entry.copy() : entry;
 					if (n.relAlias === null) {
-						node = rel;
-						node._execTime = Date.now() - start;
-						break;
+						const out: any = rel;
+						out._execTime = Date.now() - start;
+						return out;
 					}
-					node = new RenameRelation(rel, n.relAlias);
-					node._execTime = Date.now() - start;
+					const out: any = new RenameRelation(rel, n.relAlias);
+					out._execTime = Date.now() - start;
+					return out;
 				}
-				break;
+				break
 
 			case 'statement':
 				{
@@ -826,6 +906,19 @@ export function relalgFromSQLAstRoot(astRoot: sqlAst.rootSql | any, relations: {
 		return root;
 	}
 
+	if (astRoot.assignments && Array.isArray(astRoot.assignments)) {
+        for (const a of astRoot.assignments) {
+            if (a.type === 'assignment') {
+                const built = rec(a.child);
+                (relations as any)[a.name] = built;
+            } else if ((a as any).type === 'recursiveAssignment') {
+                const built = rec(a as any);
+                (relations as any)[(a as any).name] = built;
+            }
+        }
+    }
+
+
 	return rec(astRoot.child);
 }
 
@@ -899,6 +992,16 @@ function setAdditionalData<T extends RANode>(astNode: relalgAst.relalgOperation,
 
 // translates a RA-AST or a BA-AST to RA
 export function relalgFromRelalgAstRoot(astRoot: relalgAst.rootRelalg, relations: { [key: string]: Relation }) {
+	for (const a of astRoot.assignments) {
+        if (a.type === 'assignment') {
+            const built = relalgFromRelalgAstNode(a.child as any, relations);
+            relations[a.name] = built as any;
+        } else if ((a as any).type === 'recursiveAssignment') {
+            const built = relalgFromRelalgAstNode(a as any, relations);
+            relations[(a as any).name] = built as any;
+        }
+    }
+
 	// root is the real root node! of a statement
 	return relalgFromRelalgAstNode(astRoot.child, relations);
 }
@@ -910,15 +1013,57 @@ export function relalgFromRelalgAstRoot(astRoot: relalgAst.rootRelalg, relations
  * @returns {Object} an actual RA-expression
  */
 export function relalgFromRelalgAstNode(astNode: relalgAst.relalgOperation, relations: { [key: string]: Relation }): RANode {
-	function recRANode(n: relalgAst.relalgOperation): RANode {
+	function recRANode(n: relalgAst.relalgOperation, localRelations = relations, recursionContext?: string): RANode {
 		switch (n.type) {
+			case 'recursiveAssignment': {
+				let placeholder = (localRelations as any)[n.name];
+				if (!placeholder || !(placeholder instanceof RecursiveRef)) {
+					placeholder = new RecursiveRef(n.name);
+					(localRelations as any)[n.name] = placeholder;
+				}
+				const initialNode = recRANode(n.child, localRelations);
+
+				initialNode.check();
+
+				(placeholder as RecursiveRef).setCachedSchema(initialNode.getSchema());
+				const recursiveNode = recRANode(n.child2, localRelations, n.name);
+				const node = new RecursiveAssignment(n.name, initialNode, recursiveNode);
+
+				setAdditionalData(n, node);
+				(localRelations as any)[n.name] = node;
+				return node;
+            }
+
 			case 'relation':
 				{
-					if (typeof (relations[n.name]) === 'undefined') {
-						throw new ExecutionError(i18n.t('db.messages.translate.error-relation-not-found', { name: n.name }), n.codeInfo);
+					if (recursionContext && n.name.toLowerCase() === recursionContext.toLowerCase()) {
+						const ph = getEntryCaseInsensitive(localRelations as any, recursionContext);
+						return ph instanceof RecursiveRef ? ph : new RecursiveRef(recursionContext);
+					}
+
+					const entry =
+						getEntryCaseInsensitive(localRelations as any, n.name) ??
+						getEntryCaseInsensitive(relations as any, n.name);
+
+					if (!entry) {
+						throw new ExecutionError(
+							i18n.t('db.messages.translate.error-relation-not-found', { name: n.name }),
+							n.codeInfo
+						);
 					}
 					const start = Date.now();
-					const node = relations[n.name].copy();
+
+					let node: RANode;
+                    if (entry instanceof RecursiveAssignment) {
+                        node = entry;
+                    }
+                    else if (typeof (entry as any).copy === 'function') {
+                        node = (entry as any).copy();
+                    }
+                    else {
+                        node = entry;
+                    }
+
 					// Passing metadata from inner relation/expression to output relation
 					if (n.metaData && n.metaData.fromVariable) {
 						let relAlias = n.metaData.fromVariable;
@@ -1051,15 +1196,15 @@ export function relalgFromRelalgAstNode(astNode: relalgAst.relalgOperation, rela
 									}
 								}
 								else // normal columns
-									projections.push(new Column(el.name, el.relAlias));	
+									projections.push(new Column(el.name, el.relAlias));
 							}
 							// project all columns
 							else if (child.getMetaData('fromVariable') &&
 											 child.getMetaData('fromVariable') === el.relAlias) {
-								projections.push(new Column(el.name, null));	
+								projections.push(new Column(el.name, null));
 							}
 							else {
-								projections.push(new Column(el.name, el.relAlias));	
+								projections.push(new Column(el.name, el.relAlias));
 							}
 						}
 						else if (el.type === 'columnName') {

@@ -14,6 +14,8 @@ import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { faSearchMinus, faSearchPlus, faRefresh, faDownLeftAndUpRightToCenter } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { TransformWrapper, TransformComponent, useControls, ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
+import { RecursiveAssignment } from 'db/exec/RecursiveAssignment';
+import { RecursiveExecutionNode } from 'db/exec/RecursiveExecutionNode';
 
 require('./raTree.scss');
 // require('./raTreeFamilyTree.scss');
@@ -44,6 +46,50 @@ export class RaTree extends React.Component<Props> {
 		let usedVariables = 0;
 		const usedVariableNames = new Map<string, number>();
 
+			const renderRecursiveStepNode = (execNode: RecursiveExecutionNode): JSX.Element => {
+				const stepNode = execNode.getChild2();
+				const stepTable = execNode.getStepResult();
+				const schema = stepTable.getSchema();
+				const numRows = stepTable.getNumRows();
+				const stepFormulaHtml = execNode.getStepQueryFormulaHtml() ?? execNode.getChild2().getFormulaHtml(false, false);
+
+				const popoverBody = () => (
+					<div>
+						columns:
+						<ul>
+							{schema.getColumns().map((col, i) => (
+								<li key={i}>{col.toString()} <small className="muted text-muted">{schema.getType(i)}</small></li>
+							))}
+						</ul>
+						<p>{`${numRows} row${numRows === 1 ? '' : 's'}`}</p>
+					</div>
+				);
+
+				return (
+					<li>
+						<div
+							className={classNames({
+								'node': true,
+								'active': stepNode === activeNode,
+							})}
+							onClick={() => setActiveNode && setActiveNode(stepNode)}
+						>
+							<Popover
+								title={<div><div dangerouslySetInnerHTML={{ __html: stepFormulaHtml }}></div></div>}
+								body={popoverBody}
+								placement="right"
+								trigger="hover"
+							>
+								<a className="formula">
+									<span dangerouslySetInnerHTML={{ __html: stepFormulaHtml }} /><br/>
+									<span className="resultCountLabel">{`${numRows} row${numRows === 1 ? '' : 's'}`}</span>
+								</a>
+							</Popover>
+						</div>
+					</li>
+				);
+			};
+
 		const rec: (n: RANode) => JSX.Element = n => {
 			// descent
 			const child: null | JSX.Element = (
@@ -51,9 +97,20 @@ export class RaTree extends React.Component<Props> {
 					? rec(n.getChild())
 					: null
 			);
-			const child2: null | JSX.Element = (
-				(n instanceof RANodeBinary)
-					? rec(n.getChild2())
+				const child2: null | JSX.Element = (
+					(n instanceof RANodeBinary)
+						? (
+							(n instanceof RecursiveExecutionNode)
+								? renderRecursiveStepNode(n)
+								: rec(n.getChild2())
+						)
+						: null
+				);
+
+			const recursiveSteps: null | JSX.Element = (
+				// for recursive iterations
+				(n instanceof RecursiveAssignment)
+					? rec(n.getRecursiveSteps())
 					: null
 			);
 
@@ -122,11 +179,19 @@ export class RaTree extends React.Component<Props> {
 						{
 							n._execTime ? <p>{t('calc.result.exec.time')} {n._execTime}ms</p> : <p>{t('calc.result.exec.time')} - ms</p>
 						}
-						
-						
+
+
 					</div>
 				);
 			};
+
+			const childrenContent = recursiveSteps
+									?? (
+										<>
+											{child}
+											{child2}
+										</>
+									);
 
 			return (
 				<li>
@@ -151,15 +216,10 @@ export class RaTree extends React.Component<Props> {
 
 						</Popover>
 					</div>
-					{child || child2
-						? (
-							<ul>
-								{child}
-								{child2}
-							</ul>
-						)
-						: null
-					}
+
+					{(recursiveSteps || child || child2) && (
+						<ul>{childrenContent}</ul>
+					)}
 				</li>
 			);
 		};
@@ -216,7 +276,7 @@ export class RaTree extends React.Component<Props> {
 							return;
 						}
 
-						const newScale = 
+						const newScale =
 							(containerElement.querySelector('.react-transform-wrapper') as HTMLElement).offsetWidth /
 							(containerElement.querySelector('.ra-tree') as HTMLElement).offsetWidth;
 
@@ -246,7 +306,7 @@ export class RaTree extends React.Component<Props> {
 				zoomAnimation={ { disabled: true } }
 				alignmentAnimation={ { disabled: true } }
 				velocityAnimation={ { disabled: true } }
-				onTransformed={(ref: ReactZoomPanPinchRef, state: { 
+				onTransformed={(ref: ReactZoomPanPinchRef, state: {
 					scale: number;
 					positionX: number;
 					positionY: number
@@ -265,7 +325,7 @@ export class RaTree extends React.Component<Props> {
 					if (containerElement) {
 						const controlElement = containerElement.querySelector('.pan-zoom-controls');
 						const zoom = parseFloat(state.scale.toString())*100;
-						const minScale = 
+						const minScale =
 							(containerElement.querySelector('.react-transform-wrapper') as HTMLElement).offsetWidth /
 							(containerElement.querySelector('.ra-tree') as HTMLElement).offsetWidth;
 
@@ -277,7 +337,7 @@ export class RaTree extends React.Component<Props> {
 								}
 								else (zoomIn as HTMLButtonElement).disabled = false;
 							}
-						
+
 							const zoomOut = controlElement.querySelector('.zoom-out');
 							if (zoomOut) {
 								if (zoom <= minScale*100) {

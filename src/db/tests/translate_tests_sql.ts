@@ -39,14 +39,18 @@ const srcTableT: Relation = relalgjs.executeRelalg(`{
 	g,   120
 }`, {}) as Relation;
 
-const relations: {
-	R: Relation,
-	S: Relation,
-	T: Relation,
-} = {
+const srcTableFlight: Relation = relalgjs.executeRelalg(`{
+	flight.departure:string, flight.destination:string
+	'A', 'B'
+	'B', 'C'
+	'C', 'D'
+}`, {}) as Relation;
+
+const relations: { [name: string]: Relation } = {
 	R: srcTableR,
 	S: srcTableS,
 	T: srcTableT,
+	flight: srcTableFlight,
 };
 
 
@@ -503,8 +507,8 @@ QUnit.test('test using clause 0', function (assert) {
 
 QUnit.test('test using clause 1', function (assert) {
 	const query = `
-		select distinct * 
-		from R 
+		select distinct *
+		from R
 		inner join (
 			select distinct b, d as a from S
 		) as S using(b)
@@ -1457,4 +1461,117 @@ QUnit.test('test selection using NOT BETWEEN with strings', function (assert) {
 	}`);
 
 	assert.deepEqual(root.getResult(), ref.getResult());
+});
+
+QUnit.module('recursive sql');
+
+QUnit.test('WITH RECURSIVE: transitive closure over flight edges', function (assert) {
+	const query = `
+		WITH RECURSIVE path AS (
+			SELECT departure, destination FROM flight
+			UNION
+			SELECT p.departure, f.destination
+			FROM path AS p
+			JOIN flight AS f ON p.destination = f.departure
+		)
+		SELECT * FROM path
+	`;
+	const root = exec_sql(query);
+
+	const ref = relalgjs.executeRelalg(`{
+		path.departure:string, path.destination:string
+		'A', 'B'
+		'B', 'C'
+		'C', 'D'
+		'A', 'C'
+		'B', 'D'
+		'A', 'D'
+	}`, {});
+
+	assert.deepEqual(root.getResult(true), (ref as any).getResult(true), 'fixpoint bate com o fecho esperado');
+});
+
+QUnit.test('WITH RECURSIVE: step tables are delta-only (no repeats)', function (assert) {
+	const query = `
+		WITH RECURSIVE path(departure, destination) AS (
+			SELECT departure, destination FROM flight
+			UNION
+			SELECT p.departure, f.destination
+			FROM path AS p
+			JOIN flight AS f ON p.destination = f.departure
+		)
+		SELECT * FROM path
+	`;
+	const root: any = exec_sql(query);
+	root.getResult(true);
+
+	function findRecursiveAssignment(n: any): any | null {
+		if (!n) return null;
+		if (n.constructor && n.constructor.name === 'RecursiveAssignment') return n;
+		try {
+			if (typeof n.getChild === 'function') {
+				const found = findRecursiveAssignment(n.getChild());
+				if (found) return found;
+			}
+			if (typeof n.getChild2 === 'function') {
+				const found2 = findRecursiveAssignment(n.getChild2());
+				if (found2) return found2;
+			}
+		} catch (e) {}
+		return null;
+	}
+
+	const raNode: any = findRecursiveAssignment(root);
+	assert.ok(raNode, 'found RecursiveAssignment node');
+
+	const topIter: any = (typeof raNode.getRecursiveSteps === 'function') ? raNode.getRecursiveSteps() : null;
+	assert.ok(topIter, 'has at least one RecursiveExecutionNode');
+
+	const iterNodes: any[] = [];
+	let it: any = topIter;
+	while (it) {
+		iterNodes.unshift(it);
+		const leftChild = typeof it.getChild === 'function' ? it.getChild() : null;
+		if (leftChild && leftChild.constructor && leftChild.constructor.name === 'RecursiveExecutionNode') {
+			it = leftChild;
+		} else {
+			break;
+		}
+		if (iterNodes.length > 2000) break;
+	}
+
+	function normalizeRows(t: any): string[] {
+		const rows = t.getRows().map((r: any) => JSON.stringify(r));
+		rows.sort();
+		return rows;
+	}
+
+	const expected0 = new Set([
+		JSON.stringify(['A', 'C']),
+		JSON.stringify(['B', 'D']),
+	]);
+	const expected1 = new Set([
+		JSON.stringify(['A', 'D']),
+	]);
+
+	const seen = new Set<string>();
+	for (const r of (raNode.getInitial().getResult(true).getRows() as any[])) {
+		seen.add(JSON.stringify(r));
+	}
+
+	for (let i = 0; i < iterNodes.length; i++) {
+		const stepTable: any = iterNodes[i].getStepResult();
+		const stepRows = normalizeRows(stepTable);
+		for (const rowKey of stepRows) {
+			assert.notOk(seen.has(rowKey), `iteration ${i}: step does not repeat prior rows`);
+			seen.add(rowKey);
+		}
+
+		if (i === 0) {
+			assert.deepEqual(new Set(stepRows), expected0, 'step_0 matches expected delta');
+		}
+		if (i === 1) {
+			assert.deepEqual(new Set(stepRows), expected1, 'step_1 matches expected delta');
+		}
+	}
 });

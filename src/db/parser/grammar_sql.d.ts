@@ -32,6 +32,7 @@ declare namespace sqlAst {
 		= select
 		| where
 		| having
+		| recursiveAssignment
 		;
 
 	type sqlOperation
@@ -55,6 +56,12 @@ declare namespace sqlAst {
 		wrappedInParentheses?: boolean,
 		metaData?: object,
 		codeInfo: CodeInfo,
+	}
+
+	interface recursiveAssignment extends abstractSqlClause {
+		name: string;
+		type: "recursiveAssignment";
+		statement: sqlAst.statement;
 	}
 
 	interface assignment extends abstractAstNode {

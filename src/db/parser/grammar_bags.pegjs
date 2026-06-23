@@ -428,6 +428,42 @@ fullOuterJoinOperator
 
 // arguments
 
+mu
+= _ o:('μ' { return getNodeInfo('recursive'); }) _
+	{ return o; }
+/ _ o:('mu'i { return getNodeInfo('recursive'); }) __
+	{ return o; }
+/ _ o:('recursive'i { return getNodeInfo('recursive'); }) __
+	{ return o; }
+
+// a recursive assignment: e.g. $x := expression union $x
+recursive_assignment
+= o:mu n:relationName !{ usedRelationNames.push(n); } assignmentOperator e:recursiveExpression
+    {
+        function containsInitialRelation(node, initialName) {
+            if (!node) return false;
+            if (node.type === 'relation' && node.name === initialName) return true;
+            if (node.child && containsInitialRelation(node.child, initialName)) return true;
+            if (node.child2 && containsInitialRelation(node.child2, initialName)) return true;
+            if (Array.isArray(node.args)) {
+                return node.args.some(arg => containsInitialRelation(arg, initialName));
+            }
+            return false;
+        }
+        if (!containsInitialRelation(e.child2, n)) {
+            error('A parte recursiva deve referenciar a tabela inicial: ' + n);
+        }
+
+        operatorPositions.push(o);
+        return {
+            type: 'recursiveAssignment',
+            name: n,
+            child: e.child,
+            child2: e.child2,
+            codeInfo: getCodeInfo()
+        };
+    }
+
 // a assignment: e.g. $x := expression
 assignment
 = n:relationName !{ usedRelationNames.push(n); } assignmentOperator e:expression
@@ -442,6 +478,16 @@ assignment
 		};
 	}
 
+recursiveExpression
+= first:expression_precedence3 _ (u:unionOperator / 'union'i) _ second:expression_precedence3
+	{
+		return {
+			type: 'recursiveExpression',
+			child: first,
+			child2: second,
+			codeInfo: getCodeInfo()
+		};
+	}
 
 namedColumnExpr
 = a:valueExpr arrowRight dst:unqualifiedColumnName
@@ -643,7 +689,7 @@ booleanExprWithTrailingWhitspace
 
 // multiple (optional) assignments followed by a expression (using the variables)
 root
-= _ a2:(assignment __?)* a:assignment _ //toDo: checken, ob whitespace zwingend nötig oder nicht
+= _ a2:(recursive_assignment __? / assignment __?)* a:(recursive_assignment / assignment) _ //toDo: checken, ob whitespace zwingend nötig oder nicht
 	{
 		var assignments = [a];
 		for(var i in a2){
@@ -660,7 +706,7 @@ root
 			codeInfo: getCodeInfo()
 		};
 	}
-/ _ a:(assignment __?)* e:expression? _ //toDo: checken, ob whitespace zwingend nötig oder nicht
+/ _ a:(recursive_assignment __? / assignment __?)* e:expression? _ //toDo: checken, ob whitespace zwingend nötig oder nicht
 	{
 		var assignments = [];
 		for(var i = 0; i < a.length; i++){
@@ -2010,6 +2056,8 @@ RESERVED_KEYWORD_RELALG
 / 'natural'i
 / 'semi'i
 / 'anti'i
+/ 'mu'i
+/ 'recursive'i
 / 'desc'i
 / 'asc'i
 / 'case'i

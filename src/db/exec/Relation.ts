@@ -92,4 +92,6 @@ export class Relation extends RANodeNullary {
 		c._table = this._table.copy();
 		return c;
 	}
+
+	public setNumRows(numRows: number): void { this.setResultNumRows(numRows); }
 }

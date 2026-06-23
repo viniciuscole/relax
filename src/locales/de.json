@@ -222,6 +222,8 @@
 	"calc.editors.ra.toolbar.anti-join-content": "<div><b>(</b> A <b class=\"math\">) \u25b7 (</b> B <b>)</b></div>",
 	"calc.editors.ra.toolbar.assignment": "Zuweisung",
 	"calc.editors.ra.toolbar.assignment-content": "<div><b>X = </b> pi a ( A )\n<br /><b>Y = </b> pi b ( b )\n<br />( X ) <span class=\"math\">&cup;</span> ( Y )<br /></div>",
+	"calc.editors.ra.toolbar.recursive-assignment": "Rekursive Relationen",
+	"calc.editors.ra.toolbar.recursive-assignment-content": "<b class=\"math\">μ</b> t = S <span class=\"math\">&cup;</span> ( t <b>⨝</b> T )\n<br /><b>mu</b> t = S union ( t join T )\n<br /><b>recursive</b> t = S <span class=\"math\">&cup;</span> ( t ⨝ T )",
 	"calc.editors.ra.toolbar.single-line-comment": "Kommentar einzeilig",
 	"calc.editors.ra.toolbar.single-line-comment-content": "<span class=\"math\">&pi;</span> a, b A <b>-- useful comment</b>",
 	"calc.editors.ra.toolbar.multi-line-comment": "Kommentar mehrzeilig",
